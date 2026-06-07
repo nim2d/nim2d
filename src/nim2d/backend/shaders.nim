@@ -4,9 +4,9 @@
 ## Metal backend of SDL_GPU.
 ##
 ## A couple of conventions come from the SDL_GPU Metal resource model. Vertex
-## attributes come in via [[stage_in]], from the pipeline layout. Uniform buffers
-## start at [[buffer(0)]]. Fragment textures sit at [[texture(0)]] and samplers
-## at [[sampler(0)]].
+## attributes come in through stage_in, set up by the pipeline layout. Uniform
+## buffers start at buffer slot 0, fragment textures at texture slot 0, and
+## samplers at sampler slot 0.
 
 const VertexShaderMSL* = """
 #include <metal_stdlib>

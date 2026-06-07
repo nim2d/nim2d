@@ -7,6 +7,9 @@
 nimcache/
 tests/test_nim2d
 
+# Generated documentation (regenerate with `make docs`)
+docs/html/
+
 # Compiled example binaries (keep sources + assets)
 examples/*
 !examples/*.nim
