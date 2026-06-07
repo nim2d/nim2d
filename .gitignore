@@ -3,4 +3,12 @@
 \#*\#
 .#*.*
 
-examples/all
+# Nim build artifacts
+nimcache/
+tests/test_nim2d
+
+# Compiled example binaries (keep sources + assets)
+examples/*
+!examples/*.nim
+!examples/*.ttf
+!examples/*.png

@@ -2,8 +2,28 @@
 
 ![](https://github.com/beshrkayali/nim2d/workflows/Tests/badge.svg)
 
-A pre-alpha minimal 2d game engine inspired by [love2d](https://love2d.org/). Using [Nim](https://nim-lang.org/) and [SDL2](https://www.libsdl.org/download-2.0.php).
+Nim2D is a small 2D game engine for Nim, loosely modeled on love2d. It started as a way for me to get my hands dirty with Nim and SDL, and it has since moved over to Nim 2.x and SDL3, drawing through SDL's GPU API. It's pre-alpha, so expect rough edges.
 
-There's not much yet, but check `examples/all.nim` for an example that uses almost all of what's currently exposed.
+The plan is to slowly grow toward love2d feature parity, so anything you can do there you can eventually do here, written in plain Nim. Right now there's enough to draw shapes, images and text, render to a canvas, and handle keyboard and mouse input. `examples/all.nim` touches most of what exists, and there are a few small demos next to it: snake, pong, a particle fountain, a starfield, an analog clock, and bouncing balls.
 
-Note: I'm using this project as a way to get my hands dirty with Nim and SDL2. Some things might be very wrong.
+Shapes get broken into triangles and drawn through a GPU batch renderer, so there's no dependency on SDL2_gfx anymore. Images load through SDL3_image, text goes through SDL3_ttf as UTF-8, and canvases are real render targets. Keyboard, mouse and window events come in through callbacks, and there's basic timing. Shaders, a transform stack, sprite batches, audio and the rest aren't here yet.
+
+## Building
+
+You need Nim 2.0 or newer and the SDL3 libraries (SDL3, SDL3_image, SDL3_ttf, and later SDL3_mixer for audio).
+
+On macOS:
+
+```sh
+brew install sdl3 sdl3_image sdl3_ttf sdl3_mixer
+```
+
+nim2d uses the [sdl3_nim](https://github.com/dinau/sdl3_nim) binding for the core SDL3 and GPU API, with small local bindings for SDL3_image and SDL3_ttf. nimble pulls it in for you. One detail worth knowing about the build is that nim2d links SDL3 directly at compile time with `--dynlibOverride` (set up in `config.nims`) instead of loading it at runtime, because the binding looks for `libSDL3.so`, which doesn't exist on macOS. So the libraries need to be installed when you build.
+
+## Running
+
+```sh
+nimble examples              # build and run examples/all.nim
+nim c -r examples/snake.nim  # or any other example
+nimble test                  # headless unit tests
+```

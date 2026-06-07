@@ -13,21 +13,42 @@ jobs:
     name: Test
     runs-on: ubuntu-latest
     steps:
-    - name: Install deps
-      run: sudo apt-get install libsdl2-2.0-0 libsdl2-gfx-1.0-0 libsdl2-image-2.0-0 libsdl2-ttf-2.0-0
-    - run: sudo ln -s /usr/lib/x86_64-linux-gnu/libSDL2-2.0.so.0 /usr/lib/libSDL2.so; sudo ln -s /usr/lib/x86_64-linux-gnu/libSDL2-2.0.so.0 /usr/local/lib/libSDL2.so
-    - uses: actions/checkout@master
-    - name: Cache choosenim
-      id: cache-choosenim
-      uses: actions/cache@v1
-      with:
-        path: ~/.choosenim
-        key: ${{ runner.os }}-choosenim-stable
-    - name: Cache nimble
-      id: cache-nimble
-      uses: actions/cache@v1
-      with:
-        path: ~/.nimble
-        key: ${{ runner.os }}-nimble-stable
-    - uses: jiro4989/setup-nim-action@v1.0.1
-    - run: nimble test -Y
+      - uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential git cmake ninja-build \
+            libfreetype-dev libharfbuzz-dev libpng-dev libjpeg-dev pkg-config
+
+      - name: Cache SDL3
+        id: cache-sdl3
+        uses: actions/cache@v4
+        with:
+          path: /usr/local
+          key: sdl3-3.4.10-image-3.4.4-ttf-3.2.2
+
+      - name: Build SDL3 from source
+        if: steps.cache-sdl3.outputs.cache-hit != 'true'
+        run: |
+          set -e
+          build() {
+            git clone --depth 1 --branch "$2" "$1" sdlsrc
+            cmake -S sdlsrc -B sdlsrc/build -G Ninja -DCMAKE_BUILD_TYPE=Release
+            cmake --build sdlsrc/build
+            sudo cmake --install sdlsrc/build
+            rm -rf sdlsrc
+          }
+          build https://github.com/libsdl-org/SDL.git        release-3.4.10
+          build https://github.com/libsdl-org/SDL_image.git  release-3.4.4
+          build https://github.com/libsdl-org/SDL_ttf.git    release-3.2.2
+
+      - name: Refresh linker cache
+        run: sudo ldconfig
+
+      - uses: jiro4989/setup-nim-action@v2
+        with:
+          nim-version: 'stable'
+
+      - name: Run tests
+        run: nimble test -Y
