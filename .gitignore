@@ -6,6 +6,7 @@
 # Nim build artifacts
 nimcache/
 tests/test_nim2d
+tests/physics_smoke
 
 # Generated documentation (regenerate with `make docs`)
 docs/html/
@@ -20,5 +21,6 @@ examples/assets/*
 !examples/assets/*.wav
 !examples/assets/*.nim
 
-# Local-only example directory, not part of the tracked tree.
+# Local-only example directories, not part of the tracked tree.
 examples/danmaku/
+examples/games/

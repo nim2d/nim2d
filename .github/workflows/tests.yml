@@ -33,10 +33,10 @@ jobs:
           nim-version: '2.2.x'
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 
-      # --- macOS: the whole SDL3 family is in Homebrew ---
+      # --- macOS: the whole SDL3 family, plus Box2D for the physics check ---
       - name: Install SDL3 (macOS)
         if: runner.os == 'macOS'
-        run: brew install sdl3 sdl3_image sdl3_ttf sdl3_mixer
+        run: brew install sdl3 sdl3_image sdl3_ttf sdl3_mixer box2d
 
       # --- Linux: build the SDL3 family from source (apt has no SDL3 yet) ---
       # The build is headless, so SDL_UNIX_CONSOLE_BUILD lets it configure
@@ -47,7 +47,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/sdl3
-          key: linux-sdl-3.4.10-image-3.4.4-ttf-3.2.2-mixer-3.2.4-v1
+          key: linux-sdl-3.4.10-image-3.4.4-ttf-3.2.2-mixer-3.2.4-box2d-3.1.1-v1
 
       - name: Install SDL3 build and runtime deps (Linux)
         if: runner.os == 'Linux'
@@ -74,6 +74,14 @@ jobs:
           build SDL_image  release-3.4.4
           build SDL_ttf    release-3.2.2
           build SDL_mixer  release-3.2.4
+          # Box2D for the physics check (a different repo, so not via build())
+          git clone --depth 1 --branch v3.1.1 https://github.com/erincatto/box2d b2src
+          cmake -S b2src -B b2src/build -G Ninja -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_INSTALL_PREFIX="$PREFIX" \
+            -DBOX2D_SAMPLES=OFF -DBOX2D_UNIT_TESTS=OFF -DBOX2D_BENCHMARKS=OFF -DBOX2D_DOCS=OFF
+          cmake --build b2src/build
+          cmake --install b2src/build
+          rm -rf b2src
 
       - name: Configure SDL3 paths (Linux)
         if: runner.os == 'Linux'
@@ -110,3 +118,11 @@ jobs:
 
       - name: Run tests
         run: nimble test -Y
+
+      # The physics module needs Box2D, which is installed on macOS and Linux but
+      # not the Windows runner, so its headless check runs only there. It is kept
+      # out of nimble test (its name does not start with "t") so the core suite
+      # stays free of the dependency.
+      - name: Physics smoke test (Box2D)
+        if: runner.os != 'Windows'
+        run: nim c -r --hints:off tests/physics_smoke.nim
