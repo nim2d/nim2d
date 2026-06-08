@@ -29,11 +29,20 @@ type
 
   Drawable* = ref object of RootObj
 
+  Filter* = enum
+    ## Texture sampling: smooth (the default) or sharp, for pixel art.
+    filLinear, filNearest
+  Wrap* = enum
+    ## How texcoords outside 0..1 are handled.
+    wrapClamp, wrapRepeat, wrapMirror
+
   Texture* = ref object of Drawable
     tex*: ptr SDL_GPUTexture
     width*: int32
     height*: int32
     tint*: Color          ## color/alpha modulation applied when drawn
+    filter*: Filter       ## linear by default
+    wrap*: Wrap           ## clamp by default
 
   Image* = ref object of Texture
 
@@ -77,6 +86,7 @@ type
     kind*: PipelineKind
     blend*: BlendMode
     texture*: ptr SDL_GPUTexture
+    sampler*: ptr SDL_GPUSampler
     shader*: Shader
     scissor*: Scissor
     firstIndex*: uint32
@@ -98,7 +108,8 @@ type
     window*: ptr SDL_Window
     swFormat*: SDL_GPUTextureFormat   ## swapchain format; render targets must match it
     shaderFormat*: SDL_GPUShaderFormat  ## MSL or SPIR-V, chosen from the device backend
-    sampler*: ptr SDL_GPUSampler
+    sampler*: ptr SDL_GPUSampler        ## default sampler (linear, clamp)
+    samplers*: array[Filter, array[Wrap, ptr SDL_GPUSampler]]  ## cache for other combos
     whiteTex*: ptr SDL_GPUTexture     ## 1x1 white, bound when a shader draw has no texture
     pipelines*: array[PipelineKind, array[BlendMode, ptr SDL_GPUGraphicsPipeline]]
 

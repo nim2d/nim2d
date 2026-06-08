@@ -85,6 +85,8 @@ sprite.draw(nim2d, x, y, angle, 0.5, 0.5, w.float / 2, h.float / 2)
 
 You can tint an image with `setColorMod` and fade it with `setAlphaMod`. There are also `getWidth`, `getHeight` and `getDimensions`.
 
+By default an image is sampled smoothly, which is right for photos and high-resolution art but blurs pixel art when you scale it up. Call `setFilter(filNearest)` for sharp, blocky sampling that keeps pixel art crisp, or `setFilter(filLinear)` to go back. `setWrap` controls what happens when texcoords run outside the image, which comes up when you draw a quad larger than the texture: `wrapClamp` holds the edge pixel (the default), `wrapRepeat` tiles the image, and `wrapMirror` tiles it flipping every other copy. Both settings apply to canvases as well.
+
 ## Pixel data
 
 Most of the time you load images from files, but you can also build one in memory a pixel at a time. An `ImageData` is a buffer of RGBA bytes on the CPU. Make one blank, filled with a color, or loaded from a file, read and write single pixels with `getPixel` and `setPixel`, and use `mapPixel` to set every pixel from its position. When it is ready, `newImage` uploads it to a drawable image, and `encode` saves it to a PNG.

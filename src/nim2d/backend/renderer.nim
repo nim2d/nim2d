@@ -156,6 +156,25 @@ proc createSampler(gpu: GpuContext) =
   if gpu.sampler == nil:
     raise newException(CatchableError, "SDL_CreateGPUSampler failed: " & $SDL_GetError())
 
+proc samplerFor*(gpu: GpuContext, filter: Filter, wrap: Wrap): ptr SDL_GPUSampler =
+  ## The cached sampler for a filter/wrap combination, created on first use. The
+  ## default (linear, clamp) reuses the context's default sampler.
+  if filter == filLinear and wrap == wrapClamp: return gpu.sampler
+  if gpu.samplers[filter][wrap] != nil: return gpu.samplers[filter][wrap]
+  let f = (if filter == filNearest: SDL_GPU_FILTER_NEAREST else: SDL_GPU_FILTER_LINEAR)
+  let mm = (if filter == filNearest: SDL_GPU_SAMPLERMIPMAPMODE_NEAREST
+            else: SDL_GPU_SAMPLERMIPMAPMODE_LINEAR)
+  let a = case wrap
+    of wrapClamp: SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE
+    of wrapRepeat: SDL_GPU_SAMPLERADDRESSMODE_REPEAT
+    of wrapMirror: SDL_GPU_SAMPLERADDRESSMODE_MIRRORED_REPEAT
+  var ci = SDL_GPUSamplerCreateInfo(min_filter: f, mag_filter: f, mipmap_mode: mm,
+    address_mode_u: a, address_mode_v: a, address_mode_w: a)
+  result = SDL_CreateGPUSampler(gpu.device, addr ci)
+  if result == nil:
+    raise newException(CatchableError, "SDL_CreateGPUSampler failed: " & $SDL_GetError())
+  gpu.samplers[filter][wrap] = result
+
 proc createTextureFromPixels*(gpu: GpuContext, pixels: pointer, w, h, pitch: int): ptr SDL_GPUTexture
 
 proc newGpuContext*(window: ptr SDL_Window): GpuContext =
@@ -251,7 +270,8 @@ proc beginFrame*(gpu: GpuContext, background: Color, width, height: var int32): 
 
 proc addGeometry*(gpu: GpuContext, kind: PipelineKind, blend: BlendMode,
                   texture: ptr SDL_GPUTexture,
-                  verts: openArray[Vertex], idx: openArray[uint32]) =
+                  verts: openArray[Vertex], idx: openArray[uint32],
+                  sampler: ptr SDL_GPUSampler = nil) =
   ## Append geometry to the current pass, extending the last draw command when
   ## pipeline/blend/texture match (so consecutive same-state draws batch).
   if verts.len == 0 or idx.len == 0: return
@@ -268,12 +288,13 @@ proc addGeometry*(gpu: GpuContext, kind: PipelineKind, blend: BlendMode,
   template pass: untyped = gpu.passes[^1]
   let n = pass.cmds.len
   if n > 0 and pass.cmds[n-1].kind == kind and pass.cmds[n-1].blend == blend and
-     pass.cmds[n-1].texture == texture and pass.cmds[n-1].shader == gpu.curShader and
-     pass.cmds[n-1].scissor == gpu.curScissor:
+     pass.cmds[n-1].texture == texture and pass.cmds[n-1].sampler == sampler and
+     pass.cmds[n-1].shader == gpu.curShader and pass.cmds[n-1].scissor == gpu.curScissor:
     pass.cmds[n-1].indexCount += uint32(idx.len)
   else:
     pass.cmds.add DrawCmd(kind: kind, blend: blend, texture: texture,
-                          shader: gpu.curShader, scissor: gpu.curScissor,
+                          sampler: sampler, shader: gpu.curShader,
+                          scissor: gpu.curScissor,
                           firstIndex: first, indexCount: uint32(idx.len))
 
 proc setTarget*(gpu: GpuContext, target: ptr SDL_GPUTexture, w, h: int32) =
@@ -335,12 +356,14 @@ proc endFrame*(gpu: GpuContext) =
                                          Uint32(c.shader.uniform.len))
         # Shader pipelines always take a sampler; use a white texture if none.
         let tex = if c.texture != nil: c.texture else: gpu.whiteTex
-        var tsb = SDL_GPUTextureSamplerBinding(texture: tex, sampler: gpu.sampler)
+        let smp = if c.sampler != nil: c.sampler else: gpu.sampler
+        var tsb = SDL_GPUTextureSamplerBinding(texture: tex, sampler: smp)
         SDL_BindGPUFragmentSamplers(rp, 0, addr tsb, 1)
       else:
         SDL_BindGPUGraphicsPipeline(rp, gpu.pipelines[c.kind][c.blend])
         if c.kind == pkTextured and c.texture != nil:
-          var tsb = SDL_GPUTextureSamplerBinding(texture: c.texture, sampler: gpu.sampler)
+          let smp = if c.sampler != nil: c.sampler else: gpu.sampler
+          var tsb = SDL_GPUTextureSamplerBinding(texture: c.texture, sampler: smp)
           SDL_BindGPUFragmentSamplers(rp, 0, addr tsb, 1)
       if c.scissor.on:
         var sr = SDL_Rect(x: c.scissor.x.cint, y: c.scissor.y.cint,
@@ -422,6 +445,9 @@ proc destroy*(gpu: GpuContext) =
       if gpu.pipelines[kind][blend] != nil:
         SDL_ReleaseGPUGraphicsPipeline(dev, gpu.pipelines[kind][blend])
   if gpu.sampler != nil: SDL_ReleaseGPUSampler(dev, gpu.sampler)
+  for fr in gpu.samplers:
+    for s in fr:
+      if s != nil: SDL_ReleaseGPUSampler(dev, s)
   if gpu.vbuf != nil: SDL_ReleaseGPUBuffer(dev, gpu.vbuf)
   if gpu.ibuf != nil: SDL_ReleaseGPUBuffer(dev, gpu.ibuf)
   if gpu.transferBuf != nil: SDL_ReleaseGPUTransferBuffer(dev, gpu.transferBuf)

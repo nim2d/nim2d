@@ -8,8 +8,8 @@ import backend/renderer
 
 # --- shared drawable quad --------------------------------------------------
 
-proc emitQuad(nim2d: Nim2d, tex: ptr SDL_GPUTexture, tint: Color,
-              w, h, x, y, angle, sx, sy, ox, oy: float,
+proc emitQuad(nim2d: Nim2d, tex: ptr SDL_GPUTexture, sampler: ptr SDL_GPUSampler,
+              tint: Color, w, h, x, y, angle, sx, sy, ox, oy: float,
               u0, v0, u1, v1: float32) =
   ## Place one textured quad of size w by h, with rotation and scale about the
   ## origin (ox, oy), and the given texcoords.
@@ -24,7 +24,7 @@ proc emitQuad(nim2d: Nim2d, tex: ptr SDL_GPUTexture, tint: Color,
     Vertex(x: px.float32, y: py.float32, u: tu, v: tv, r: c[0], g: c[1], b: c[2], a: c[3])
   let verts = [vtx(x0, y0, u0, v0), vtx(x1, y1, u1, v0),
                vtx(x2, y2, u1, v1), vtx(x3, y3, u0, v1)]
-  nim2d.gpu.addGeometry(pkTextured, nim2d.blend, tex, verts, [0'u32, 1, 2, 0, 2, 3])
+  nim2d.gpu.addGeometry(pkTextured, nim2d.blend, tex, verts, [0'u32, 1, 2, 0, 2, 3], sampler)
 
 proc draw*(t: Texture, nim2d: Nim2d, x, y: float, angle: float = 0,
            sx: float = 1, sy: float = 1, ox: float = 0, oy: float = 0,
@@ -34,7 +34,8 @@ proc draw*(t: Texture, nim2d: Nim2d, x, y: float, angle: float = 0,
   var v0 = 0'f32; var v1 = 1'f32
   if flipH: swap(u0, u1)
   if flipV: swap(v0, v1)
-  emitQuad(nim2d, t.tex, t.tint, t.width.float, t.height.float,
+  emitQuad(nim2d, t.tex, nim2d.gpu.samplerFor(t.filter, t.wrap), t.tint,
+           t.width.float, t.height.float,
            x, y, angle, sx, sy, ox, oy, u0, v0, u1, v1)
 
 proc newQuad*(x, y, w, h, sw, sh: float): Quad =
@@ -46,8 +47,19 @@ proc newQuad*(x, y, w, h, sw, sh: float): Quad =
 proc draw*(t: Texture, nim2d: Nim2d, quad: Quad, x, y: float, angle: float = 0,
            sx: float = 1, sy: float = 1, ox: float = 0, oy: float = 0) =
   ## Draw just the `quad` region of a texture.
-  emitQuad(nim2d, t.tex, t.tint, quad.w.float, quad.h.float,
+  emitQuad(nim2d, t.tex, nim2d.gpu.samplerFor(t.filter, t.wrap), t.tint,
+           quad.w.float, quad.h.float,
            x, y, angle, sx, sy, ox, oy, quad.u0, quad.v0, quad.u1, quad.v1)
+
+proc setFilter*(t: Texture, filter: Filter) =
+  ## Choose smooth sampling (`filLinear`, the default) or sharp, blocky sampling
+  ## (`filNearest`), which keeps pixel art crisp when scaled up.
+  t.filter = filter
+
+proc setWrap*(t: Texture, wrap: Wrap) =
+  ## Choose how texcoords outside 0..1 behave: clamp to the edge (the default),
+  ## repeat, or mirror. Repeat is what you want for a tiling texture.
+  t.wrap = wrap
 
 # --- images ----------------------------------------------------------------
 
