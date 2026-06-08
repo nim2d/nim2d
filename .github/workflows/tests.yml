@@ -47,7 +47,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/sdl3
-          key: linux-sdl-3.4.10-image-3.4.4-ttf-3.2.2-mixer-3.2.4-box2d-3.1.1-v1
+          key: linux-sdl-3.4.10-image-3.4.4-ttf-3.2.2-mixer-3.2.4-box2d-3.1.1-v2
 
       - name: Install SDL3 build and runtime deps (Linux)
         if: runner.os == 'Linux'
@@ -61,27 +61,24 @@ jobs:
         run: |
           set -e
           PREFIX="$HOME/sdl3"
+          # Clone into a scratch dir, not the repo tree, which already has a src/.
+          SRC="$RUNNER_TEMP/depsrc"
           build() {
-            local repo="$1"; local tag="$2"; shift 2
-            git clone --depth 1 --branch "$tag" "https://github.com/libsdl-org/$repo" src
-            cmake -S src -B src/build -G Ninja -DCMAKE_BUILD_TYPE=Release \
+            local url="$1"; local tag="$2"; shift 2
+            rm -rf "$SRC"
+            git clone --depth 1 --branch "$tag" "$url" "$SRC"
+            cmake -S "$SRC" -B "$SRC/build" -G Ninja -DCMAKE_BUILD_TYPE=Release \
               -DCMAKE_INSTALL_PREFIX="$PREFIX" -DCMAKE_PREFIX_PATH="$PREFIX" "$@"
-            cmake --build src/build
-            cmake --install src/build
-            rm -rf src
+            cmake --build "$SRC/build"
+            cmake --install "$SRC/build"
           }
-          build SDL        release-3.4.10 -DSDL_UNIX_CONSOLE_BUILD=ON
-          build SDL_image  release-3.4.4
-          build SDL_ttf    release-3.2.2
-          build SDL_mixer  release-3.2.4
-          # Box2D for the physics check (a different repo, so not via build())
-          git clone --depth 1 --branch v3.1.1 https://github.com/erincatto/box2d b2src
-          cmake -S b2src -B b2src/build -G Ninja -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_INSTALL_PREFIX="$PREFIX" \
+          build https://github.com/libsdl-org/SDL        release-3.4.10 -DSDL_UNIX_CONSOLE_BUILD=ON
+          build https://github.com/libsdl-org/SDL_image  release-3.4.4
+          build https://github.com/libsdl-org/SDL_ttf    release-3.2.2
+          build https://github.com/libsdl-org/SDL_mixer  release-3.2.4
+          build https://github.com/erincatto/box2d       v3.1.1 \
             -DBOX2D_SAMPLES=OFF -DBOX2D_UNIT_TESTS=OFF -DBOX2D_BENCHMARKS=OFF -DBOX2D_DOCS=OFF
-          cmake --build b2src/build
-          cmake --install b2src/build
-          rm -rf b2src
+          rm -rf "$SRC"
 
       - name: Configure SDL3 paths (Linux)
         if: runner.os == 'Linux'
@@ -116,13 +113,28 @@ jobs:
           Add-Content -Path $env:GITHUB_ENV  -Value "NIM2D_SDL_PREFIX=C:/sdl3"
           Add-Content -Path $env:GITHUB_PATH -Value "C:\sdl3\bin"
 
+      # Box2D ships no prebuilt Windows package, so build it from source with the
+      # MinGW toolchain into the same prefix. Best effort: if it does not build,
+      # the physics check below is allowed to fail without failing the job.
+      - name: Build Box2D (Windows)
+        if: runner.os == 'Windows'
+        continue-on-error: true
+        shell: pwsh
+        run: |
+          git clone --depth 1 --branch v3.1.1 https://github.com/erincatto/box2d b2src
+          cmake -S b2src -B b2src/build -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release `
+            -DCMAKE_INSTALL_PREFIX="C:/sdl3" `
+            -DBOX2D_SAMPLES=OFF -DBOX2D_UNIT_TESTS=OFF -DBOX2D_BENCHMARKS=OFF -DBOX2D_DOCS=OFF
+          cmake --build b2src/build
+          cmake --install b2src/build
+
       - name: Run tests
         run: nimble test -Y
 
-      # The physics module needs Box2D, which is installed on macOS and Linux but
-      # not the Windows runner, so its headless check runs only there. It is kept
-      # out of nimble test (its name does not start with "t") so the core suite
-      # stays free of the dependency.
+      # The physics module needs Box2D. It is kept out of nimble test (its name
+      # does not start with "t") so the core suite stays free of the dependency.
+      # Enforced on macOS and Linux; best effort on Windows, where the Box2D
+      # source build above may still need tuning.
       - name: Physics smoke test (Box2D)
-        if: runner.os != 'Windows'
+        continue-on-error: ${{ runner.os == 'Windows' }}
         run: nim c -r --hints:off tests/physics_smoke.nim
