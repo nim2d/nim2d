@@ -19,5 +19,8 @@ The `examples` folder has runnable demos, each a single file. Run any of them wi
 - `filesystem.nim` keeps a high-score table in the save directory, appending a new score on each press and reading it back.
 - `audio.nim` plays a looping music track and a sound effect, with keys for volume, stereo panning and pitch.
 - `system.nim` shows the platform and power info and drives the window and cursor from the keyboard: fullscreen, resize, minimize, relative mouse mode, grab, clipboard and a message box.
+- `physics.nim` drops boxes and balls that fall, collide and stack on Box2D, click or space to add more. It needs Box2D installed and is built with `nim c -r examples/physics.nim`.
+- `threads.nim` runs a prime count on a background thread and reports its progress over a channel, while a spinner keeps turning at full frame rate to show the main loop never blocks.
+- `touch.nim` draws a dot under each finger and ripples out where you press, using the touch callbacks and polling. On a desktop the trackpad usually acts as a touch device.
 
 These are a good place to see the API used in context. snake and pong show input and game state, particles shows blend modes, clock shows building shapes from lines and trigonometry, and all shows images, canvases and text together.

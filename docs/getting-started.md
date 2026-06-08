@@ -8,6 +8,8 @@ brew install sdl3 sdl3_image sdl3_ttf sdl3_mixer
 
 nim2d pulls in the `sdl3_nim` binding through nimble, and it links SDL3 at build time using settings in `config.nims`, so as long as the libraries are installed you don't have to pass anything extra to the compiler.
 
+The physics module is the one extra. It builds on Box2D (`brew install box2d`) and you import it on its own with `import nim2d/physics`, so you only need Box2D installed if you actually use it.
+
 Here is the smallest program that draws something.
 
 ```nim

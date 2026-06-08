@@ -161,6 +161,9 @@ type
     gamepadpressed*: proc(nim2d: Nim2d, id: SDL_JoystickID, button: SDL_GamepadButton)
     gamepadreleased*: proc(nim2d: Nim2d, id: SDL_JoystickID, button: SDL_GamepadButton)
     gamepadaxis*: proc(nim2d: Nim2d, id: SDL_JoystickID, axis: SDL_GamepadAxis, value: float)
+    touchpressed*: proc(nim2d: Nim2d, id: int64, x, y, pressure: float)
+    touchmoved*: proc(nim2d: Nim2d, id: int64, x, y, pressure: float)
+    touchreleased*: proc(nim2d: Nim2d, id: int64, x, y, pressure: float)
 
     # Window events
     window_shown*: proc(nim2d: Nim2d)

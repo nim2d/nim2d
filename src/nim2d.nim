@@ -24,10 +24,12 @@ import nim2d/imagedata
 import nim2d/filesystem
 import nim2d/audio
 import nim2d/system
+import nim2d/touch
+import nim2d/thread
 
 export types, graphics, image, canvas, font, timer, window
 export keyboard, mouse, gamepad, spritebatch, mesh, particlesystem, shader
-export math, data, imagedata, filesystem, audio, system
+export math, data, imagedata, filesystem, audio, system, touch, thread
 export sdl  # SDL_Scancode, SDL_SCANCODE_*, etc. for callback handlers
 
 # --- callback setters ------------------------------------------------------
@@ -46,6 +48,9 @@ proc `textinput=`*(n2d: Nim2d, p: proc(nim2d: Nim2d, text: string)) = n2d.textin
 proc `gamepadpressed=`*(n2d: Nim2d, p: proc(nim2d: Nim2d, id: SDL_JoystickID, button: SDL_GamepadButton)) = n2d.gamepadpressed = p
 proc `gamepadreleased=`*(n2d: Nim2d, p: proc(nim2d: Nim2d, id: SDL_JoystickID, button: SDL_GamepadButton)) = n2d.gamepadreleased = p
 proc `gamepadaxis=`*(n2d: Nim2d, p: proc(nim2d: Nim2d, id: SDL_JoystickID, axis: SDL_GamepadAxis, value: float)) = n2d.gamepadaxis = p
+proc `touchpressed=`*(n2d: Nim2d, p: proc(nim2d: Nim2d, id: int64, x, y, pressure: float)) = n2d.touchpressed = p
+proc `touchmoved=`*(n2d: Nim2d, p: proc(nim2d: Nim2d, id: int64, x, y, pressure: float)) = n2d.touchmoved = p
+proc `touchreleased=`*(n2d: Nim2d, p: proc(nim2d: Nim2d, id: int64, x, y, pressure: float)) = n2d.touchreleased = p
 
 proc `window_shown=`*(n2d: Nim2d, p: proc(nim2d: Nim2d)) = n2d.window_shown = p
 proc `window_hidden=`*(n2d: Nim2d, p: proc(nim2d: Nim2d)) = n2d.window_hidden = p
@@ -84,11 +89,14 @@ proc clear*(nim2d: Nim2d) =
 # --- lifecycle -------------------------------------------------------------
 
 proc newNim2d*(title: string, x, y, width, height: cint,
-               background: Color): Nim2d =
+               background: Color, highDpi = false): Nim2d =
   if not SDL_Init(SDL_InitFlags(SDL_INIT_VIDEO or SDL_INIT_GAMEPAD)):
     raise newException(CatchableError, "SDL_Init failed: " & $SDL_GetError())
 
-  let win = SDL_CreateWindow(title.cstring, width, height, SDL_WindowFlags(0))
+  # High-DPI gives a backing buffer at the display's real pixel resolution, so on
+  # a 2x screen the drawable, and getWidth/getHeight, are twice the point size.
+  let flags = (if highDpi: SDL_WINDOW_HIGH_PIXEL_DENSITY else: 0'u64)
+  let win = SDL_CreateWindow(title.cstring, width, height, SDL_WindowFlags(flags))
   if win == nil:
     raise newException(CatchableError, "SDL_CreateWindow failed: " & $SDL_GetError())
   discard SDL_SetWindowPosition(win, x, y)
@@ -117,6 +125,9 @@ proc newNim2d*(title: string, x, y, width, height: cint,
     gamepadpressed: proc(nim2d: Nim2d, id: SDL_JoystickID, button: SDL_GamepadButton) = discard,
     gamepadreleased: proc(nim2d: Nim2d, id: SDL_JoystickID, button: SDL_GamepadButton) = discard,
     gamepadaxis: proc(nim2d: Nim2d, id: SDL_JoystickID, axis: SDL_GamepadAxis, value: float) = discard,
+    touchpressed: proc(nim2d: Nim2d, id: int64, x, y, pressure: float) = discard,
+    touchmoved: proc(nim2d: Nim2d, id: int64, x, y, pressure: float) = discard,
+    touchreleased: proc(nim2d: Nim2d, id: int64, x, y, pressure: float) = discard,
     window_shown: noop, window_hidden: noop, window_moved: noop,
     window_resized: noop, window_minimized: noop, window_maximized: noop,
     window_restored: noop, window_enter: noop, window_leave: noop,

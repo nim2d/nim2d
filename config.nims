@@ -11,6 +11,7 @@
 
 switch("path", "src")
 switch("mm", "orc")
+switch("threads", "on")   # for the thread module; on by default, set for clarity
 
 proc linkSdl(prefix: string) =
   switch("dynlibOverride", "SDL3")

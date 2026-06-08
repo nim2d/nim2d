@@ -12,6 +12,7 @@ These docs come in two parts. The guides are hand-written and walk through how t
 - [Files](filesystem.html)
 - [Audio](audio.html)
 - [System](system.html)
+- [Physics](physics.html)
 - [Examples](examples.html)
 - [API reference](api/nim2d.html), the main module, with links to every other module under it
 - [Symbol index](api/theindex.html), every type and proc in one list

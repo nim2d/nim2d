@@ -61,3 +61,19 @@ proc showMessageBox*(nim2d: Nim2d, title, message: string) =
   discard SDL_ShowSimpleMessageBox(
     SDL_MessageBoxFlags(SDL_MESSAGEBOX_INFORMATION),
     title.cstring, message.cstring, nim2d.gpu.window)
+
+proc setVSync*(nim2d: Nim2d, on: bool) =
+  ## Turn vertical sync on or off. With it off the frame rate is uncapped, which
+  ## is handy for benchmarking. Vsync is always available; if the immediate mode
+  ## the off state wants is not supported, vsync stays on.
+  let dev = nim2d.gpu.device
+  let win = nim2d.gpu.window
+  var mode = (if on: SDL_GPU_PRESENTMODE_VSYNC else: SDL_GPU_PRESENTMODE_IMMEDIATE)
+  if not on and not SDL_WindowSupportsGPUPresentMode(dev, win, mode):
+    mode = SDL_GPU_PRESENTMODE_VSYNC
+  discard SDL_SetGPUSwapchainParameters(dev, win, SDL_GPU_SWAPCHAINCOMPOSITION_SDR, mode)
+
+proc getDPIScale*(nim2d: Nim2d): float =
+  ## The ratio of backing pixels to window points. It is 1.0 on a normal display
+  ## or when high-DPI is off, and 2.0 on a 2x display with high-DPI enabled.
+  SDL_GetWindowPixelDensity(nim2d.gpu.window).float

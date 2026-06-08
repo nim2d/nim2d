@@ -4,6 +4,12 @@ import std/os
 import nim2d
 import nim2d/transform
 
+# Module-scope channel and worker for the thread test. A thread proc cannot be a
+# closure, so the worker reaches this global rather than capturing anything.
+var threadChan = newChannel[int]()
+proc threadWorker() {.thread.} =
+  for i in 1 .. 5: threadChan.send(i)
+
 # These tests run in CI (headless), so they must not create a GPU device /
 # window. We unit-test the pure pieces and compile-check the public API.
 
@@ -185,6 +191,14 @@ suite "system (platform queries)":
     check getProcessorCount() >= 1
     let p = getPowerInfo()
     check p.state.len > 0
+
+suite "thread (background work)":
+  test "a worker thread sends values over a channel":
+    let t = newThread(threadWorker)
+    t.join()                       # worker has finished; the five values are queued
+    var total = 0
+    for _ in 0 ..< 5: total += threadChan.receive()
+    check total == 15
 
 # Compile-only: exercises the full public surface without running the GPU.
 when false:

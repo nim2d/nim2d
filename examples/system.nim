@@ -19,6 +19,7 @@ var
   rdx, rdy = 0.0         # accumulated relative motion (when relative mode is on)
   pasted = ""            # last text read from the clipboard
   status = "ready"       # the last action taken
+  vsync = true           # vertical sync state
 
 n2d.mousemove = proc(nim2d: Nim2d, x, y, dx, dy: float) =
   mx = x
@@ -67,6 +68,10 @@ n2d.keydown = proc(nim2d: Nim2d, sc: SDL_Scancode) =
   of SDL_SCANCODE_U:
     discard openURL("https://github.com/beshrkayali/nim2d")
     status = "opened the project page in the browser"
+  of SDL_SCANCODE_Y:
+    vsync = not vsync
+    nim2d.setVSync(vsync)
+    status = "vsync " & (if vsync: "on" else: "off")
   else: discard
 
 proc kv(y: float, k, v: string) =
@@ -97,6 +102,8 @@ n2d.draw = proc(nim2d: Nim2d) =
   nim2d.print("WINDOW", 30, 232)
   kv(260, "size", $ww & " x " & $wh)
   kv(286, "fullscreen", (if nim2d.isFullscreen: "yes" else: "no"))
+  kv(312, "dpi/vsync/fps", formatFloat(nim2d.getDPIScale, ffDecimal, 2) &
+      "  " & (if vsync: "vsync" else: "no-vsync") & "  " & $int(nim2d.getFPS))
 
   nim2d.setColor(150, 200, 120)
   nim2d.print("MOUSE", 30, 332)
@@ -113,7 +120,7 @@ n2d.draw = proc(nim2d: Nim2d) =
 
   nim2d.setFont(fontSmall)
   nim2d.setColor(120, 130, 160)
-  nim2d.print("F fullscreen   R relative   G grab   H cursor   W warp   B msgbox", 30, 514)
+  nim2d.print("F fullscreen   Y vsync   R relative   G grab   H cursor   W warp   B msgbox", 30, 514)
   nim2d.print("M/X/Z minimize maximize restore   1/2/3 resize   C copy   V paste   U url", 30, 532)
 
 n2d.play()
