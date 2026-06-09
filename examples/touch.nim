@@ -28,8 +28,8 @@ proc colorFor(id: int64): Color =
 n2d.touchpressed = proc(nim2d: Nim2d, id: int64, x, y, pressure: float) =
   ripples.add Ripple(x: x, y: y, t: 0, color: colorFor(id))
 
-n2d.keydown = proc(nim2d: Nim2d, sc: SDL_Scancode) =
-  if sc == SDL_SCANCODE_ESCAPE: nim2d.running = false
+n2d.keydown = proc(nim2d: Nim2d, sc: Key) =
+  if sc == Key.escape: nim2d.running = false
 
 n2d.update = proc(nim2d: Nim2d, dt: float) =
   var i = 0

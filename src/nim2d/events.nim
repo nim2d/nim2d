@@ -7,6 +7,8 @@
 import backend/sdl
 import types
 import gamepad
+import keyboard
+import mouse
 
 proc dispatch*(nim2d: Nim2d, evt: SDL_Event) =
   let t = evt.type_field
@@ -14,9 +16,9 @@ proc dispatch*(nim2d: Nim2d, evt: SDL_Event) =
     nim2d.quit(nim2d)
     nim2d.running = false
   elif t == uint32(SDL_EVENT_KEY_DOWN):
-    nim2d.keydown(nim2d, evt.key.scancode)
+    nim2d.keydown(nim2d, toKey(evt.key.scancode))
   elif t == uint32(SDL_EVENT_KEY_UP):
-    nim2d.keyup(nim2d, evt.key.scancode)
+    nim2d.keyup(nim2d, toKey(evt.key.scancode))
   elif t == uint32(SDL_EVENT_MOUSE_MOTION):
     let d = SDL_GetWindowPixelDensity(nim2d.gpu.window).float
     nim2d.mousemove(nim2d, evt.motion.x.float * d, evt.motion.y.float * d,
@@ -24,11 +26,11 @@ proc dispatch*(nim2d: Nim2d, evt: SDL_Event) =
   elif t == uint32(SDL_EVENT_MOUSE_BUTTON_DOWN):
     let d = SDL_GetWindowPixelDensity(nim2d.gpu.window).float
     nim2d.mousepressed(nim2d, evt.button.x.float * d, evt.button.y.float * d,
-                       evt.button.button, evt.button.clicks)
+                       toMouseButton(evt.button.button), evt.button.clicks)
   elif t == uint32(SDL_EVENT_MOUSE_BUTTON_UP):
     let d = SDL_GetWindowPixelDensity(nim2d.gpu.window).float
     nim2d.mousereleased(nim2d, evt.button.x.float * d, evt.button.y.float * d,
-                        evt.button.button, evt.button.clicks)
+                        toMouseButton(evt.button.button), evt.button.clicks)
   elif t == uint32(SDL_EVENT_MOUSE_WHEEL):
     nim2d.mousewheel(nim2d, evt.wheel.x.float, evt.wheel.y.float)
   elif t == uint32(SDL_EVENT_TEXT_INPUT):

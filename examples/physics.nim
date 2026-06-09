@@ -57,13 +57,13 @@ proc reset() =
 n2d.load = proc(nim2d: Nim2d) =
   for i in 0 ..< 12: spawn(random(120.0, W - 120.0), random(40.0, 220.0))
 
-n2d.mousepressed = proc(nim2d: Nim2d, x, y: float, button, clicks: uint8) =
+n2d.mousepressed = proc(nim2d: Nim2d, x, y: float, button: MouseButton, clicks: uint8) =
   spawn(x, y)
 
-n2d.keydown = proc(nim2d: Nim2d, sc: SDL_Scancode) =
-  if sc == SDL_SCANCODE_ESCAPE: nim2d.running = false
-  elif sc == SDL_SCANCODE_R: reset()
-  elif sc == SDL_SCANCODE_SPACE:
+n2d.keydown = proc(nim2d: Nim2d, sc: Key) =
+  if sc == Key.escape: nim2d.running = false
+  elif sc == Key.r: reset()
+  elif sc == Key.space:
     for i in 0 ..< 6: spawn(random(120.0, W - 120.0), random(40.0, 120.0))
 
 n2d.update = proc(nim2d: Nim2d, dt: float) =

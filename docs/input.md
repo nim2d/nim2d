@@ -4,20 +4,20 @@ Input arrives through callbacks you assign on the engine, the same way as `draw`
 
 ## Keyboard
 
-`keydown` and `keyup` fire once when a key goes down or comes back up. They hand you an `SDL_Scancode`, which names the physical key. The scancode names are re-exported by nim2d, so you can use them directly.
+`keydown` and `keyup` fire once when a key goes down or comes back up. They hand you a `Key`, a nim2d enum that names the key, used qualified like `Key.escape`, `Key.space` or `Key.a`. A key with no name in the enum arrives as `Key.unknown`.
 
 ```nim
-n2d.keydown = proc(nim2d: Nim2d, scancode: SDL_Scancode) =
-  if scancode == SDL_SCANCODE_ESCAPE:
+n2d.keydown = proc(nim2d: Nim2d, key: Key) =
+  if key == Key.escape:
     nim2d.running = false
 ```
 
-For movement that should continue while a key is held, the callbacks aren't what you want, since they only fire on the edges. Ask `isKeyDown` each frame instead.
+For movement that should continue while a key is held, the callbacks aren't what you want, since they only fire on the edges. Ask `isDown` each frame instead.
 
 ```nim
 n2d.update = proc(nim2d: Nim2d, dt: float) =
-  if isKeyDown(SDL_SCANCODE_LEFT): x -= 200 * dt
-  if isKeyDown(SDL_SCANCODE_RIGHT): x += 200 * dt
+  if isDown(Key.left): x -= 200 * dt
+  if isDown(Key.right): x += 200 * dt
 ```
 
 To receive typed characters, turn on text input with `startTextInput` and set a `textinput` callback. The text arrives already decoded as a UTF-8 string, so a key and its shifted or accented form come through correctly. `stopTextInput` turns it back off.
@@ -32,15 +32,15 @@ n2d.textinput = proc(nim2d: Nim2d, text: string) =
 
 ## Mouse
 
-`mousemove` gives the cursor position and how far it moved since the last event. `mousepressed` and `mousereleased` give the position, the button number, and how many clicks in quick succession. Button 1 is left, 2 is middle, 3 is right. All the coordinates are floats.
+`mousemove` gives the cursor position and how far it moved since the last event. `mousepressed` and `mousereleased` give the position, the button, and how many clicks in quick succession. The button is a `MouseButton`, one of `MouseButton.left`, `.middle`, `.right`, `.x1` or `.x2`. All the coordinates are floats.
 
 ```nim
 n2d.mousemove = proc(nim2d: Nim2d, x, y, dx, dy: float) =
   cursorX = x
   cursorY = y
 
-n2d.mousepressed = proc(nim2d: Nim2d, x, y: float, button, clicks: uint8) =
-  if button == 1:
+n2d.mousepressed = proc(nim2d: Nim2d, x, y: float, button: MouseButton, clicks: uint8) =
+  if button == MouseButton.left:
     spawnAt(x, y)
 ```
 
@@ -52,7 +52,7 @@ n2d.mousewheel = proc(nim2d: Nim2d, x, y: float) =
 
 n2d.update = proc(nim2d: Nim2d, dt: float) =
   let m = mousePosition()
-  if isMouseDown(1):
+  if isMouseDown(MouseButton.left):
     paint(m.x, m.y)
 ```
 
@@ -82,8 +82,8 @@ n2d.window_focus_lost = proc(nim2d: Nim2d) =
 Beyond `getWidth`, `getHeight` and `getSize`, there are controls for the window itself. `setTitle` sets the title, `setSize` resizes it and `setResizable` decides whether the user can. `setFullscreen` switches to fullscreen and back, and `isFullscreen` reads the state. `minimize`, `maximize` and `restore` do what they say. `getDesktopDimensions` gives the primary display's resolution, `setIcon` takes an ImageData for the window icon, and `showMessageBox` pops up a simple message and waits for it to be dismissed.
 
 ```nim
-n2d.keydown = proc(nim2d: Nim2d, sc: SDL_Scancode) =
-  if sc == SDL_SCANCODE_F:
+n2d.keydown = proc(nim2d: Nim2d, key: Key) =
+  if key == Key.f:
     nim2d.setFullscreen(not nim2d.isFullscreen)
 ```
 

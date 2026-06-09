@@ -14,8 +14,8 @@ n2d.setFont(font)
 
 var t = 0.0
 
-n2d.keydown = proc(nim2d: Nim2d, scancode: SDL_Scancode) =
-  if scancode == SDL_SCANCODE_ESCAPE: nim2d.running = false
+n2d.keydown = proc(nim2d: Nim2d, scancode: Key) =
+  if scancode == Key.escape: nim2d.running = false
 
 n2d.update = proc(nim2d: Nim2d, dt: float) =
   t += dt

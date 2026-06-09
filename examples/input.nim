@@ -21,10 +21,10 @@ var typed = ""
 n2d.load = proc(nim2d: Nim2d) =
   nim2d.startTextInput()
 
-n2d.keydown = proc(nim2d: Nim2d, scancode: SDL_Scancode) =
-  if scancode == SDL_SCANCODE_ESCAPE:
+n2d.keydown = proc(nim2d: Nim2d, scancode: Key) =
+  if scancode == Key.escape:
     nim2d.running = false
-  elif scancode == SDL_SCANCODE_BACKSPACE and typed.len > 0:
+  elif scancode == Key.backspace and typed.len > 0:
     typed.setLen(typed.len - 1)
 
 n2d.textinput = proc(nim2d: Nim2d, text: string) =
@@ -35,10 +35,10 @@ n2d.mousewheel = proc(nim2d: Nim2d, x, y: float) =
 
 n2d.update = proc(nim2d: Nim2d, dt: float) =
   let speed = 320.0 * dt
-  if isKeyDown(SDL_SCANCODE_LEFT) or isKeyDown(SDL_SCANCODE_A): px -= speed
-  if isKeyDown(SDL_SCANCODE_RIGHT) or isKeyDown(SDL_SCANCODE_D): px += speed
-  if isKeyDown(SDL_SCANCODE_UP) or isKeyDown(SDL_SCANCODE_W): py -= speed
-  if isKeyDown(SDL_SCANCODE_DOWN) or isKeyDown(SDL_SCANCODE_S): py += speed
+  if isDown(Key.left) or isDown(Key.a): px -= speed
+  if isDown(Key.right) or isDown(Key.d): px += speed
+  if isDown(Key.up) or isDown(Key.w): py -= speed
+  if isDown(Key.down) or isDown(Key.s): py += speed
 
 n2d.draw = proc(nim2d: Nim2d) =
   nim2d.setColor(120, 200, 255)

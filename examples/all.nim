@@ -25,8 +25,8 @@ n2d.mousemove = proc(nim2d: Nim2d, x, y, dx, dy: float) =
   mx = x
   my = y
 
-n2d.keydown = proc(nim2d: Nim2d, scancode: SDL_Scancode) =
-  if scancode == SDL_SCANCODE_ESCAPE:
+n2d.keydown = proc(nim2d: Nim2d, scancode: Key) =
+  if scancode == Key.escape:
     nim2d.running = false
 
 n2d.update = proc(nim2d: Nim2d, dt: float) =

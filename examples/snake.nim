@@ -49,19 +49,19 @@ proc reset() =
 
 reset()
 
-n2d.keydown = proc(nim2d: Nim2d, scancode: SDL_Scancode) =
+n2d.keydown = proc(nim2d: Nim2d, scancode: Key) =
   case scancode
-  of SDL_SCANCODE_UP, SDL_SCANCODE_W:
+  of Key.up, Key.w:
     if dir.y == 0: nextDir = (0, -1)
-  of SDL_SCANCODE_DOWN, SDL_SCANCODE_S:
+  of Key.down, Key.s:
     if dir.y == 0: nextDir = (0, 1)
-  of SDL_SCANCODE_LEFT, SDL_SCANCODE_A:
+  of Key.left, Key.a:
     if dir.x == 0: nextDir = (-1, 0)
-  of SDL_SCANCODE_RIGHT, SDL_SCANCODE_D:
+  of Key.right, Key.d:
     if dir.x == 0: nextDir = (1, 0)
-  of SDL_SCANCODE_R:
+  of Key.r:
     if dead: reset()
-  of SDL_SCANCODE_ESCAPE:
+  of Key.escape:
     nim2d.running = false
   else: discard
 

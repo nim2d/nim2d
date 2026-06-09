@@ -31,11 +31,11 @@ for _ in 0 ..< Count:
   resetStar(s, true)
   stars.add s
 
-n2d.keydown = proc(nim2d: Nim2d, scancode: SDL_Scancode) =
+n2d.keydown = proc(nim2d: Nim2d, scancode: Key) =
   case scancode
-  of SDL_SCANCODE_UP: speed = min(400.0, speed + 30)
-  of SDL_SCANCODE_DOWN: speed = max(10.0, speed - 30)
-  of SDL_SCANCODE_ESCAPE: nim2d.running = false
+  of Key.up: speed = min(400.0, speed + 30)
+  of Key.down: speed = max(10.0, speed - 30)
+  of Key.escape: nim2d.running = false
   else: discard
 
 n2d.update = proc(nim2d: Nim2d, dt: float) =

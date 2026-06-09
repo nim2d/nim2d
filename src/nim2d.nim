@@ -39,11 +39,11 @@ proc `load=`*(n2d: Nim2d, p: proc(nim2d: Nim2d)) = n2d.load = p
 proc `update=`*(n2d: Nim2d, p: proc(nim2d: Nim2d, dt: float)) = n2d.update = p
 proc `draw=`*(n2d: Nim2d, p: proc(nim2d: Nim2d)) = n2d.draw = p
 proc `quit=`*(n2d: Nim2d, p: proc(nim2d: Nim2d)) = n2d.quit = p
-proc `keydown=`*(n2d: Nim2d, p: proc(nim2d: Nim2d, scancode: SDL_Scancode)) = n2d.keydown = p
-proc `keyup=`*(n2d: Nim2d, p: proc(nim2d: Nim2d, scancode: SDL_Scancode)) = n2d.keyup = p
+proc `keydown=`*(n2d: Nim2d, p: proc(nim2d: Nim2d, key: Key)) = n2d.keydown = p
+proc `keyup=`*(n2d: Nim2d, p: proc(nim2d: Nim2d, key: Key)) = n2d.keyup = p
 proc `mousemove=`*(n2d: Nim2d, p: proc(nim2d: Nim2d, x, y, dx, dy: float)) = n2d.mousemove = p
-proc `mousepressed=`*(n2d: Nim2d, p: proc(nim2d: Nim2d, x, y: float, button, clicks: uint8)) = n2d.mousepressed = p
-proc `mousereleased=`*(n2d: Nim2d, p: proc(nim2d: Nim2d, x, y: float, button, clicks: uint8)) = n2d.mousereleased = p
+proc `mousepressed=`*(n2d: Nim2d, p: proc(nim2d: Nim2d, x, y: float, button: MouseButton, clicks: uint8)) = n2d.mousepressed = p
+proc `mousereleased=`*(n2d: Nim2d, p: proc(nim2d: Nim2d, x, y: float, button: MouseButton, clicks: uint8)) = n2d.mousereleased = p
 proc `mousewheel=`*(n2d: Nim2d, p: proc(nim2d: Nim2d, x, y: float)) = n2d.mousewheel = p
 proc `textinput=`*(n2d: Nim2d, p: proc(nim2d: Nim2d, text: string)) = n2d.textinput = p
 proc `gamepadpressed=`*(n2d: Nim2d, p: proc(nim2d: Nim2d, id: SDL_JoystickID, button: SDL_GamepadButton)) = n2d.gamepadpressed = p
@@ -157,11 +157,11 @@ proc newNim2d*(title: string, x, y, width, height: cint,
     perfFreq: SDL_GetPerformanceFrequency(),
     load: noop, draw: noop, quit: noop,
     update: proc(nim2d: Nim2d, dt: float) = discard,
-    keydown: proc(nim2d: Nim2d, scancode: SDL_Scancode) = discard,
-    keyup: proc(nim2d: Nim2d, scancode: SDL_Scancode) = discard,
+    keydown: proc(nim2d: Nim2d, key: Key) = discard,
+    keyup: proc(nim2d: Nim2d, key: Key) = discard,
     mousemove: proc(nim2d: Nim2d, x, y, dx, dy: float) = discard,
-    mousepressed: proc(nim2d: Nim2d, x, y: float, button, clicks: uint8) = discard,
-    mousereleased: proc(nim2d: Nim2d, x, y: float, button, clicks: uint8) = discard,
+    mousepressed: proc(nim2d: Nim2d, x, y: float, button: MouseButton, clicks: uint8) = discard,
+    mousereleased: proc(nim2d: Nim2d, x, y: float, button: MouseButton, clicks: uint8) = discard,
     mousewheel: proc(nim2d: Nim2d, x, y: float) = discard,
     textinput: proc(nim2d: Nim2d, text: string) = discard,
     gamepadpressed: proc(nim2d: Nim2d, id: SDL_JoystickID, button: SDL_GamepadButton) = discard,

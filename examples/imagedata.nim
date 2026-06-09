@@ -25,9 +25,9 @@ data.mapPixel(proc(x, y: int32, c: Color): Color =
 let tex = n2d.newImage(data)
 var saved = false
 
-n2d.keydown = proc(nim2d: Nim2d, sc: SDL_Scancode) =
-  if sc == SDL_SCANCODE_ESCAPE: nim2d.running = false
-  elif sc == SDL_SCANCODE_S:
+n2d.keydown = proc(nim2d: Nim2d, sc: Key) =
+  if sc == Key.escape: nim2d.running = false
+  elif sc == Key.s:
     data.encode(getAppDir() / "out.png")
     saved = true
 

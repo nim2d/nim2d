@@ -27,32 +27,32 @@ var pitch = 1.0
 n2d.load = proc(nim2d: Nim2d) =
   music.play()
 
-n2d.keydown = proc(nim2d: Nim2d, sc: SDL_Scancode) =
+n2d.keydown = proc(nim2d: Nim2d, sc: Key) =
   case sc
-  of SDL_SCANCODE_ESCAPE: nim2d.running = false
-  of SDL_SCANCODE_SPACE:
+  of Key.escape: nim2d.running = false
+  of Key.space:
     blip.setPosition(pan, 0)
     blip.play()
-  of SDL_SCANCODE_P:
+  of Key.p:
     if music.isPaused: music.resume() else: music.pause()
-  of SDL_SCANCODE_UP:
+  of Key.up:
     master = min(1.5, master + 0.1)
     nim2d.setVolume(master)
-  of SDL_SCANCODE_DOWN:
+  of Key.down:
     master = max(0.0, master - 0.1)
     nim2d.setVolume(master)
-  of SDL_SCANCODE_LEFT:
+  of Key.left:
     pan = max(-6.0, pan - 1.0)
     blip.setPosition(pan, 0)
     blip.play()
-  of SDL_SCANCODE_RIGHT:
+  of Key.right:
     pan = min(6.0, pan + 1.0)
     blip.setPosition(pan, 0)
     blip.play()
-  of SDL_SCANCODE_LEFTBRACKET:
+  of Key.leftBracket:
     pitch = max(0.5, pitch - 0.1)
     music.setPitch(pitch)
-  of SDL_SCANCODE_RIGHTBRACKET:
+  of Key.rightBracket:
     pitch = min(2.0, pitch + 0.1)
     music.setPitch(pitch)
   else: discard

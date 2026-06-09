@@ -33,7 +33,7 @@ n2d.mousemove = proc(nim2d: Nim2d, x, y, dx, dy: float) =
   ey = y
   ps.setPosition(x, y)
 
-n2d.mousepressed = proc(nim2d: Nim2d, x, y: float, button, clicks: uint8) =
+n2d.mousepressed = proc(nim2d: Nim2d, x, y: float, button: MouseButton, clicks: uint8) =
   # A firework: a one-off radial burst from the click point.
   ps.setPosition(x, y)
   ps.setSpread(TAU)
@@ -41,8 +41,8 @@ n2d.mousepressed = proc(nim2d: Nim2d, x, y: float, button, clicks: uint8) =
   ps.setSpread(0.7)
   ps.setPosition(ex, ey)
 
-n2d.keydown = proc(nim2d: Nim2d, scancode: SDL_Scancode) =
-  if scancode == SDL_SCANCODE_ESCAPE: nim2d.running = false
+n2d.keydown = proc(nim2d: Nim2d, scancode: Key) =
+  if scancode == Key.escape: nim2d.running = false
 
 n2d.update = proc(nim2d: Nim2d, dt: float) =
   ps.update(dt)

@@ -33,15 +33,15 @@ proc spawn(x, y: float) =
 for _ in 0 ..< 18:
   spawn(rand(60.0 .. (W - 60).float), rand(60.0 .. (H / 2)))
 
-n2d.mousepressed = proc(nim2d: Nim2d, x, y: float, button, clicks: uint8) =
+n2d.mousepressed = proc(nim2d: Nim2d, x, y: float, button: MouseButton, clicks: uint8) =
   spawn(x, y)
 
-n2d.keydown = proc(nim2d: Nim2d, scancode: SDL_Scancode) =
+n2d.keydown = proc(nim2d: Nim2d, scancode: Key) =
   case scancode
-  of SDL_SCANCODE_SPACE:
+  of Key.space:
     for _ in 0 ..< 12: spawn(W / 2, H / 2)
-  of SDL_SCANCODE_C: balls.setLen(0)
-  of SDL_SCANCODE_ESCAPE: nim2d.running = false
+  of Key.c: balls.setLen(0)
+  of Key.escape: nim2d.running = false
   else: discard
 
 n2d.update = proc(nim2d: Nim2d, dt: float) =

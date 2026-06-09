@@ -39,18 +39,18 @@ proc reset() =
 
 reset()
 
-n2d.keydown = proc(nim2d: Nim2d, scancode: SDL_Scancode) =
+n2d.keydown = proc(nim2d: Nim2d, scancode: Key) =
   case scancode
-  of SDL_SCANCODE_W, SDL_SCANCODE_UP: upHeld = true
-  of SDL_SCANCODE_S, SDL_SCANCODE_DOWN: downHeld = true
-  of SDL_SCANCODE_R: reset()
-  of SDL_SCANCODE_ESCAPE: nim2d.running = false
+  of Key.w, Key.up: upHeld = true
+  of Key.s, Key.down: downHeld = true
+  of Key.r: reset()
+  of Key.escape: nim2d.running = false
   else: discard
 
-n2d.keyup = proc(nim2d: Nim2d, scancode: SDL_Scancode) =
+n2d.keyup = proc(nim2d: Nim2d, scancode: Key) =
   case scancode
-  of SDL_SCANCODE_W, SDL_SCANCODE_UP: upHeld = false
-  of SDL_SCANCODE_S, SDL_SCANCODE_DOWN: downHeld = false
+  of Key.w, Key.up: upHeld = false
+  of Key.s, Key.down: downHeld = false
   else: discard
 
 proc clampPad(y: float): float =

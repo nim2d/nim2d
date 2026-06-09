@@ -28,47 +28,47 @@ n2d.mousemove = proc(nim2d: Nim2d, x, y, dx, dy: float) =
     rdx += dx
     rdy += dy
 
-n2d.keydown = proc(nim2d: Nim2d, sc: SDL_Scancode) =
+n2d.keydown = proc(nim2d: Nim2d, sc: Key) =
   case sc
-  of SDL_SCANCODE_ESCAPE: nim2d.running = false
-  of SDL_SCANCODE_F:
+  of Key.escape: nim2d.running = false
+  of Key.f:
     nim2d.setFullscreen(not nim2d.isFullscreen)
     status = "toggled fullscreen"
-  of SDL_SCANCODE_R:
+  of Key.r:
     let on = not nim2d.isRelativeMode()
     nim2d.setRelativeMode(on)
     rdx = 0; rdy = 0
     status = "relative mouse " & (if on: "on" else: "off")
-  of SDL_SCANCODE_G:
+  of Key.g:
     let on = not nim2d.isMouseGrabbed()
     nim2d.setMouseGrabbed(on)
     status = "mouse grab " & (if on: "on" else: "off")
-  of SDL_SCANCODE_H:
+  of Key.h:
     let vis = not isMouseVisible()
     setMouseVisible(vis)
     status = "cursor " & (if vis: "shown" else: "hidden")
-  of SDL_SCANCODE_M: nim2d.minimize(); status = "minimized (restore from the dock)"
-  of SDL_SCANCODE_X: nim2d.maximize(); status = "maximized"
-  of SDL_SCANCODE_Z: nim2d.restore(); status = "restored"
-  of SDL_SCANCODE_1: nim2d.setSize(640, 480); status = "resized to 640x480"
-  of SDL_SCANCODE_2: nim2d.setSize(760, 560); status = "resized to 760x560"
-  of SDL_SCANCODE_3: nim2d.setSize(1024, 640); status = "resized to 1024x640"
-  of SDL_SCANCODE_C:
+  of Key.m: nim2d.minimize(); status = "minimized (restore from the dock)"
+  of Key.x: nim2d.maximize(); status = "maximized"
+  of Key.z: nim2d.restore(); status = "restored"
+  of Key.one: nim2d.setSize(640, 480); status = "resized to 640x480"
+  of Key.two: nim2d.setSize(760, 560); status = "resized to 760x560"
+  of Key.three: nim2d.setSize(1024, 640); status = "resized to 1024x640"
+  of Key.c:
     setClipboardText("nim2d was here")
     status = "copied to the clipboard"
-  of SDL_SCANCODE_V:
+  of Key.v:
     pasted = (if hasClipboardText(): getClipboardText() else: "(empty)")
     status = "pasted from the clipboard"
-  of SDL_SCANCODE_W:
+  of Key.w:
     nim2d.setMousePosition(nim2d.getWidth.float / 2, nim2d.getHeight.float / 2)
     status = "warped the cursor to the center"
-  of SDL_SCANCODE_B:
+  of Key.b:
     nim2d.showMessageBox("nim2d", "A simple message box from love.window.")
     status = "showed a message box"
-  of SDL_SCANCODE_U:
+  of Key.u:
     discard openURL("https://github.com/beshrkayali/nim2d")
     status = "opened the project page in the browser"
-  of SDL_SCANCODE_Y:
+  of Key.y:
     vsync = not vsync
     nim2d.setVSync(vsync)
     status = "vsync " & (if vsync: "on" else: "off")

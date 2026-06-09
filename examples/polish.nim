@@ -37,8 +37,8 @@ proc label(g: Nim2d, s: string, x, y: float) =
   g.setColor(170, 182, 205)
   g.print(s, x, y)
 
-n2d.keydown = proc(nim2d: Nim2d, sc: SDL_Scancode) =
-  if sc == SDL_SCANCODE_ESCAPE: nim2d.running = false
+n2d.keydown = proc(nim2d: Nim2d, sc: Key) =
+  if sc == Key.escape: nim2d.running = false
 
 n2d.update = proc(nim2d: Nim2d, dt: float) =
   t += dt

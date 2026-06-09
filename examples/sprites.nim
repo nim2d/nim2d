@@ -33,8 +33,8 @@ let crop = newQuad(lw.float * 0.25, lh.float * 0.25, lw.float * 0.5, lh.float * 
 
 var t = 0.0
 
-n2d.keydown = proc(nim2d: Nim2d, sc: SDL_Scancode) =
-  if sc == SDL_SCANCODE_ESCAPE: nim2d.running = false
+n2d.keydown = proc(nim2d: Nim2d, sc: Key) =
+  if sc == Key.escape: nim2d.running = false
 
 n2d.update = proc(nim2d: Nim2d, dt: float) =
   t += dt

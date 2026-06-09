@@ -26,10 +26,10 @@ proc loadScores(): seq[int] =
 
 var scores = loadScores()
 
-n2d.keydown = proc(nim2d: Nim2d, sc: SDL_Scancode) =
-  if sc == SDL_SCANCODE_ESCAPE:
+n2d.keydown = proc(nim2d: Nim2d, sc: Key) =
+  if sc == Key.escape:
     nim2d.running = false
-  elif sc == SDL_SCANCODE_SPACE:
+  elif sc == Key.space:
     nim2d.fs.append("scores.txt", $randomInt(100, 9999) & "\n")
     scores = loadScores()
 

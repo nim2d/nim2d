@@ -15,8 +15,8 @@ let cx = W / 2
 let cy = H / 2
 let R = 240.0
 
-n2d.keydown = proc(nim2d: Nim2d, scancode: SDL_Scancode) =
-  if scancode == SDL_SCANCODE_ESCAPE: nim2d.running = false
+n2d.keydown = proc(nim2d: Nim2d, scancode: Key) =
+  if scancode == Key.escape: nim2d.running = false
 
 proc hand(nim2d: Nim2d, frac, len, width: float, col: Color) =
   ## `frac` is 0..1 around the dial (0 = 12 o'clock, clockwise).

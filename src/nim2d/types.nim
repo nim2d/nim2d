@@ -22,6 +22,25 @@ type
   BlendMode* = enum
     bmNone, bmAlpha, bmAdd, bmMod
 
+  Key* {.pure.} = enum
+    ## A keyboard key, delivered to the keydown and keyup callbacks and accepted
+    ## by `isDown`. Use it qualified, like `Key.escape`, `Key.space` or `Key.a`.
+    ## Keys without a name here arrive as `Key.unknown`.
+    unknown
+    a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y, z
+    one, two, three, four, five, six, seven, eight, nine, zero
+    f1, f2, f3, f4, f5, f6, f7, f8, f9, f10, f11, f12
+    space, enter, escape, tab, backspace, delete
+    left, right, up, down
+    lshift, rshift, lctrl, rctrl, lalt, ralt
+    home, End, pageUp, pageDown
+    minus, equals, comma, period, slash, backslash, grave, semicolon, apostrophe
+    leftBracket, rightBracket
+
+  MouseButton* {.pure.} = enum
+    ## A mouse button, delivered to the mousepressed and mousereleased callbacks.
+    left, right, middle, x1, x2
+
   PipelineKind* = enum
     pkColored, pkTextured
 
@@ -182,11 +201,11 @@ type
     draw*: proc(nim2d: Nim2d)
     quit*: proc(nim2d: Nim2d)
     update*: proc(nim2d: Nim2d, dt: float)
-    keydown*: proc(nim2d: Nim2d, scancode: SDL_Scancode)
-    keyup*: proc(nim2d: Nim2d, scancode: SDL_Scancode)
+    keydown*: proc(nim2d: Nim2d, key: Key)
+    keyup*: proc(nim2d: Nim2d, key: Key)
     mousemove*: proc(nim2d: Nim2d, x, y, dx, dy: float)
-    mousepressed*: proc(nim2d: Nim2d, x, y: float, button, clicks: uint8)
-    mousereleased*: proc(nim2d: Nim2d, x, y: float, button, clicks: uint8)
+    mousepressed*: proc(nim2d: Nim2d, x, y: float, button: MouseButton, clicks: uint8)
+    mousereleased*: proc(nim2d: Nim2d, x, y: float, button: MouseButton, clicks: uint8)
     mousewheel*: proc(nim2d: Nim2d, x, y: float)
     textinput*: proc(nim2d: Nim2d, text: string)
     gamepadpressed*: proc(nim2d: Nim2d, id: SDL_JoystickID, button: SDL_GamepadButton)

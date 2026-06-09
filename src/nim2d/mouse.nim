@@ -4,6 +4,16 @@
 import backend/sdl
 import types
 
+proc toMouseButton*(b: uint8): MouseButton =
+  ## The nim2d MouseButton for an SDL button number.
+  case b
+  of 1: MouseButton.left
+  of 2: MouseButton.middle
+  of 3: MouseButton.right
+  of 4: MouseButton.x1
+  of 5: MouseButton.x2
+  else: MouseButton.left
+
 proc mousePosition*(): Vec2 =
   ## Cursor position relative to the window.
   var x, y: cfloat
@@ -19,6 +29,16 @@ proc isMouseDown*(button: int = 1): bool =
   let state = SDL_GetMouseState(addr x, addr y)
   let mask = SDL_MouseButtonFlags(1'u32 shl (button - 1))
   (state and mask) != 0
+
+proc isMouseDown*(button: MouseButton): bool =
+  ## Whether a mouse button is held, as a MouseButton (the friendly form).
+  let n = case button
+    of MouseButton.left: 1
+    of MouseButton.middle: 2
+    of MouseButton.right: 3
+    of MouseButton.x1: 4
+    of MouseButton.x2: 5
+  isMouseDown(n)
 
 # --- cursor, capture and warping -------------------------------------------
 
