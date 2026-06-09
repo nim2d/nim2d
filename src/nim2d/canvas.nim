@@ -8,10 +8,14 @@ import types
 import backend/renderer
 
 proc newCanvas*(nim2d: Nim2d, width, height: int32): Canvas =
-  Canvas(
+  result = Canvas(
     tex: nim2d.gpu.createRenderTarget(width, height),
     width: width, height: height,
     tint: (255'u8, 255'u8, 255'u8, 255'u8))
+  # When stencil masking is on, every render target needs a paired depth-stencil
+  # target, since the pipelines are built to expect one.
+  if nim2d.gpu.stencilEnabled:
+    result.depth = nim2d.gpu.createDepthTarget(width, height)
 
 proc newCanvas*(nim2d: Nim2d): Canvas =
   newCanvas(nim2d, nim2d.width, nim2d.height)

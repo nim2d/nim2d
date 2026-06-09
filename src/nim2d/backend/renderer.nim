@@ -75,8 +75,9 @@ proc blendState(mode: BlendMode): SDL_GPUColorTargetBlendState =
       dst_alpha_blendfactor: SDL_GPU_BLENDFACTOR_ZERO,
       alpha_blend_op: SDL_GPU_BLENDOP_ADD)
 
-proc makePipeline(gpu: GpuContext, vs, fs: ptr SDL_GPUShader,
-                  blend: BlendMode): ptr SDL_GPUGraphicsPipeline =
+proc makePipeline(gpu: GpuContext, vs, fs: ptr SDL_GPUShader, blend: BlendMode,
+                  dsState = SDL_GPUDepthStencilState(),
+                  writeColor = true): ptr SDL_GPUGraphicsPipeline =
   var vbDesc = SDL_GPUVertexBufferDescription(
     slot: 0, pitch: Uint32(sizeof(Vertex)),
     input_rate: SDL_GPU_VERTEXINPUTRATE_VERTEX)
@@ -88,8 +89,16 @@ proc makePipeline(gpu: GpuContext, vs, fs: ptr SDL_GPUShader,
     SDL_GPUVertexAttribute(location: 2, buffer_slot: 0,
       format: SDL_GPU_VERTEXELEMENTFORMAT_FLOAT4, offset: Uint32(4 * sizeof(float32))),
   ]
-  var colorTarget = SDL_GPUColorTargetDescription(
-    format: gpu.swFormat, blend_state: blendState(blend))
+  var bs = blendState(blend)
+  if not writeColor:                      # mask draws write stencil, not color
+    bs.enable_color_write_mask = true
+    bs.color_write_mask = SDL_GPUColorComponentFlags(0)
+  var colorTarget = SDL_GPUColorTargetDescription(format: gpu.swFormat, blend_state: bs)
+  var ti = SDL_GPUGraphicsPipelineTargetInfo(
+    color_target_descriptions: addr colorTarget, num_color_targets: 1)
+  if gpu.stencilEnabled:                   # passes carry a depth-stencil target
+    ti.depth_stencil_format = gpu.depthFormat
+    ti.has_depth_stencil_target = true
   var ci = SDL_GPUGraphicsPipelineCreateInfo(
     vertex_shader: vs,
     fragment_shader: fs,
@@ -101,8 +110,8 @@ proc makePipeline(gpu: GpuContext, vs, fs: ptr SDL_GPUShader,
       fill_mode: SDL_GPU_FILLMODE_FILL, cull_mode: SDL_GPU_CULLMODE_NONE,
       front_face: SDL_GPU_FRONTFACE_COUNTER_CLOCKWISE),
     multisample_state: SDL_GPUMultisampleState(sample_count: SDL_GPU_SAMPLECOUNT_1),
-    target_info: SDL_GPUGraphicsPipelineTargetInfo(
-      color_target_descriptions: addr colorTarget, num_color_targets: 1))
+    depth_stencil_state: dsState,
+    target_info: ti)
   result = SDL_CreateGPUGraphicsPipeline(gpu.device, addr ci)
   if result == nil:
     raise newException(CatchableError,
@@ -121,6 +130,25 @@ proc buildPipelines(gpu: GpuContext) =
   for blend in BlendMode:
     gpu.pipelines[pkColored][blend] = makePipeline(gpu, vs, fsColor, blend)
     gpu.pipelines[pkTextured][blend] = makePipeline(gpu, vs, fsTex, blend)
+  if gpu.stencilEnabled:
+    # A test pipeline draws only where the stencil already holds the mask value;
+    # a write pipeline stamps that value, drawing into the stencil but not color.
+    let testOp = SDL_GPUStencilOpState(compare_op: SDL_GPU_COMPAREOP_EQUAL,
+      fail_op: SDL_GPU_STENCILOP_KEEP, pass_op: SDL_GPU_STENCILOP_KEEP,
+      depth_fail_op: SDL_GPU_STENCILOP_KEEP)
+    let testState = SDL_GPUDepthStencilState(enable_stencil_test: true,
+      compare_mask: 255'u8, write_mask: 0'u8,
+      front_stencil_state: testOp, back_stencil_state: testOp)
+    let writeOp = SDL_GPUStencilOpState(compare_op: SDL_GPU_COMPAREOP_ALWAYS,
+      fail_op: SDL_GPU_STENCILOP_KEEP, pass_op: SDL_GPU_STENCILOP_REPLACE,
+      depth_fail_op: SDL_GPU_STENCILOP_KEEP)
+    let writeState = SDL_GPUDepthStencilState(enable_stencil_test: true,
+      compare_mask: 255'u8, write_mask: 255'u8,
+      front_stencil_state: writeOp, back_stencil_state: writeOp)
+    for blend in BlendMode:
+      gpu.stencilTestPipes[pkColored][blend] = makePipeline(gpu, vs, fsColor, blend, testState)
+      gpu.stencilTestPipes[pkTextured][blend] = makePipeline(gpu, vs, fsTex, blend, testState)
+    gpu.stencilWritePipe = makePipeline(gpu, vs, fsColor, bmNone, writeState, writeColor = false)
   SDL_ReleaseGPUShader(dev, vs)
   SDL_ReleaseGPUShader(dev, fsColor)
   SDL_ReleaseGPUShader(dev, fsTex)
@@ -151,7 +179,8 @@ proc createSampler(gpu: GpuContext) =
     mipmap_mode: SDL_GPU_SAMPLERMIPMAPMODE_LINEAR,
     address_mode_u: SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE,
     address_mode_v: SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE,
-    address_mode_w: SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE)
+    address_mode_w: SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE,
+    max_lod: 1000.0)
   gpu.sampler = SDL_CreateGPUSampler(gpu.device, addr ci)
   if gpu.sampler == nil:
     raise newException(CatchableError, "SDL_CreateGPUSampler failed: " & $SDL_GetError())
@@ -169,16 +198,19 @@ proc samplerFor*(gpu: GpuContext, filter: Filter, wrap: Wrap): ptr SDL_GPUSample
     of wrapRepeat: SDL_GPU_SAMPLERADDRESSMODE_REPEAT
     of wrapMirror: SDL_GPU_SAMPLERADDRESSMODE_MIRRORED_REPEAT
   var ci = SDL_GPUSamplerCreateInfo(min_filter: f, mag_filter: f, mipmap_mode: mm,
-    address_mode_u: a, address_mode_v: a, address_mode_w: a)
+    address_mode_u: a, address_mode_v: a, address_mode_w: a, max_lod: 1000.0)
   result = SDL_CreateGPUSampler(gpu.device, addr ci)
   if result == nil:
     raise newException(CatchableError, "SDL_CreateGPUSampler failed: " & $SDL_GetError())
   gpu.samplers[filter][wrap] = result
 
-proc createTextureFromPixels*(gpu: GpuContext, pixels: pointer, w, h, pitch: int): ptr SDL_GPUTexture
+proc createTextureFromPixels*(gpu: GpuContext, pixels: pointer, w, h, pitch: int,
+                              mipmaps = false): ptr SDL_GPUTexture
+proc createRenderTarget*(gpu: GpuContext, w, h: int32): ptr SDL_GPUTexture
+proc createDepthTarget*(gpu: GpuContext, w, h: int32): ptr SDL_GPUTexture
 
-proc newGpuContext*(window: ptr SDL_Window): GpuContext =
-  result = GpuContext(window: window)
+proc newGpuContext*(window: ptr SDL_Window, aa: int32 = 1, stencil = false): GpuContext =
+  result = GpuContext(window: window, ssFactor: max(1'i32, aa), stencilEnabled: stencil)
   # Accept either shader format and let SDL choose a backend: Metal with MSL on
   # Apple platforms, Vulkan with SPIR-V on Linux and Windows.
   let want = SDL_GPUShaderFormat(uint32(SDL_GPU_SHADERFORMAT_MSL) or
@@ -195,6 +227,13 @@ proc newGpuContext*(window: ptr SDL_Window): GpuContext =
   if not SDL_ClaimWindowForGPUDevice(result.device, window):
     raise newException(CatchableError, "ClaimWindowForGPUDevice failed: " & $SDL_GetError())
   result.swFormat = SDL_GetGPUSwapchainTextureFormat(result.device, window)
+  if stencil:
+    let d24 = SDL_GPU_TEXTUREFORMAT_D24_UNORM_S8_UINT
+    let dsUsage = SDL_GPUTextureUsageFlags(SDL_GPU_TEXTUREUSAGE_DEPTH_STENCIL_TARGET)
+    if SDL_GPUTextureSupportsFormat(result.device, d24, SDL_GPU_TEXTURETYPE_2D, dsUsage):
+      result.depthFormat = d24
+    else:
+      result.depthFormat = SDL_GPU_TEXTUREFORMAT_D32_FLOAT_S8_UINT
   result.createSampler()
   result.buildPipelines()
   var white = [255'u8, 255'u8, 255'u8, 255'u8]
@@ -234,9 +273,9 @@ proc ensureTransfer(gpu: GpuContext, bytes: int) =
 # --- frame / pass recording ------------------------------------------------
 
 proc startPass(gpu: GpuContext, target: ptr SDL_GPUTexture, w, h: int32,
-               doClear: bool, clearColor: Color) =
+               doClear: bool, clearColor: Color, depth: ptr SDL_GPUTexture = nil) =
   gpu.passes.add RenderPassRec(
-    target: target, w: w, h: h, doClear: doClear, clearColor: clearColor,
+    target: target, depth: depth, w: w, h: h, doClear: doClear, clearColor: clearColor,
     projection: ortho(w, h), cmds: @[])
 
 proc beginFrame*(gpu: GpuContext, background: Color, width, height: var int32): bool =
@@ -252,6 +291,7 @@ proc beginFrame*(gpu: GpuContext, background: Color, width, height: var int32): 
   gpu.transformStack.setLen(0)
   gpu.curScissor = Scissor(on: false)
   gpu.curShader = nil
+  gpu.stencilMode = 0
   gpu.cmd = SDL_AcquireGPUCommandBuffer(gpu.device)
   if gpu.cmd == nil: return false
   var w, h: Uint32
@@ -265,7 +305,31 @@ proc beginFrame*(gpu: GpuContext, background: Color, width, height: var int32): 
     return false
   width = int32(w)
   height = int32(h)
-  startPass(gpu, gpu.swTex, width, height, true, background)
+  gpu.frameW = width
+  gpu.frameH = height
+  # The swapchain depth target is needed for the screen pass and the downscale
+  # blit, so ensure it whenever stencil is on, before splitting on supersampling.
+  if gpu.stencilEnabled and (gpu.screenDepth == nil or
+      gpu.screenDepthW != width or gpu.screenDepthH != height):
+    if gpu.screenDepth != nil: SDL_ReleaseGPUTexture(gpu.device, gpu.screenDepth)
+    gpu.screenDepth = gpu.createDepthTarget(width, height)
+    gpu.screenDepthW = width; gpu.screenDepthH = height
+  if gpu.ssFactor > 1:
+    # Render the frame into a higher-resolution target, then downscale it to the
+    # swapchain in endFrame. The projection stays at the logical size, so drawing
+    # is unchanged; only the target is bigger. This anti-aliases everything.
+    let sw = width * gpu.ssFactor
+    let sh = height * gpu.ssFactor
+    if gpu.ssTex == nil or gpu.ssW != sw or gpu.ssH != sh:
+      if gpu.ssTex != nil: SDL_ReleaseGPUTexture(gpu.device, gpu.ssTex)
+      gpu.ssTex = gpu.createRenderTarget(sw, sh)
+      if gpu.stencilEnabled:
+        if gpu.ssDepth != nil: SDL_ReleaseGPUTexture(gpu.device, gpu.ssDepth)
+        gpu.ssDepth = gpu.createDepthTarget(sw, sh)
+      gpu.ssW = sw; gpu.ssH = sh
+    startPass(gpu, gpu.ssTex, width, height, true, background, gpu.ssDepth)
+  else:
+    startPass(gpu, gpu.swTex, width, height, true, background, gpu.screenDepth)
   return true
 
 proc addGeometry*(gpu: GpuContext, kind: PipelineKind, blend: BlendMode,
@@ -289,26 +353,44 @@ proc addGeometry*(gpu: GpuContext, kind: PipelineKind, blend: BlendMode,
   let n = pass.cmds.len
   if n > 0 and pass.cmds[n-1].kind == kind and pass.cmds[n-1].blend == blend and
      pass.cmds[n-1].texture == texture and pass.cmds[n-1].sampler == sampler and
-     pass.cmds[n-1].shader == gpu.curShader and pass.cmds[n-1].scissor == gpu.curScissor:
+     pass.cmds[n-1].shader == gpu.curShader and pass.cmds[n-1].scissor == gpu.curScissor and
+     pass.cmds[n-1].stencil == gpu.stencilMode:
     pass.cmds[n-1].indexCount += uint32(idx.len)
   else:
     pass.cmds.add DrawCmd(kind: kind, blend: blend, texture: texture,
                           sampler: sampler, shader: gpu.curShader,
-                          scissor: gpu.curScissor,
+                          scissor: gpu.curScissor, stencil: gpu.stencilMode,
                           firstIndex: first, indexCount: uint32(idx.len))
 
-proc setTarget*(gpu: GpuContext, target: ptr SDL_GPUTexture, w, h: int32) =
+proc setTarget*(gpu: GpuContext, target: ptr SDL_GPUTexture, w, h: int32,
+                depth: ptr SDL_GPUTexture = nil) =
   ## Switch the render target (canvas vs screen); preserves existing contents.
-  startPass(gpu, target, w, h, false, (0'u8, 0'u8, 0'u8, 255'u8))
+  startPass(gpu, target, w, h, false, (0'u8, 0'u8, 0'u8, 255'u8), depth)
 
 proc clearTarget*(gpu: GpuContext, target: ptr SDL_GPUTexture, w, h: int32,
-                  color: Color) =
+                  color: Color, depth: ptr SDL_GPUTexture = nil) =
   ## Clear the current target by beginning a fresh clearing pass on it.
-  startPass(gpu, target, w, h, true, color)
+  startPass(gpu, target, w, h, true, color, depth)
 
 proc endFrame*(gpu: GpuContext) =
   ## Upload all geometry, then replay every recorded pass, then submit.
   if gpu.cmd == nil: return
+
+  if gpu.ssFactor > 1 and gpu.ssTex != nil:
+    # Downscale the high-res target onto the swapchain with linear filtering.
+    gpu.transform = identity()
+    gpu.curShader = nil
+    gpu.curScissor = Scissor(on: false)
+    startPass(gpu, gpu.swTex, gpu.frameW, gpu.frameH, true, (0'u8, 0'u8, 0'u8, 255'u8),
+              gpu.screenDepth)
+    let w = gpu.frameW.float32
+    let h = gpu.frameH.float32
+    let verts = [
+      Vertex(x: 0'f32, y: 0'f32, u: 0'f32, v: 0'f32, r: 1, g: 1, b: 1, a: 1),
+      Vertex(x: w, y: 0'f32, u: 1'f32, v: 0'f32, r: 1, g: 1, b: 1, a: 1),
+      Vertex(x: w, y: h, u: 1'f32, v: 1'f32, r: 1, g: 1, b: 1, a: 1),
+      Vertex(x: 0'f32, y: h, u: 0'f32, v: 1'f32, r: 1, g: 1, b: 1, a: 1)]
+    gpu.addGeometry(pkTextured, bmNone, gpu.ssTex, verts, [0'u32, 1, 2, 0, 2, 3], gpu.sampler)
 
   if gpu.vertices.len > 0:
     ensureVbuf(gpu, gpu.vertices.len)
@@ -340,7 +422,12 @@ proc endFrame*(gpu: GpuContext) =
       else: SDL_FColor()),
       load_op: (if p.doClear: SDL_GPU_LOADOP_CLEAR else: SDL_GPU_LOADOP_LOAD),
       store_op: SDL_GPU_STOREOP_STORE)
-    let rp = SDL_BeginGPURenderPass(gpu.cmd, addr cti, 1, nil)
+    var dsti = SDL_GPUDepthStencilTargetInfo(
+      texture: p.depth, clear_stencil: 0,
+      load_op: SDL_GPU_LOADOP_DONT_CARE, store_op: SDL_GPU_STOREOP_DONT_CARE,
+      stencil_load_op: SDL_GPU_LOADOP_CLEAR, stencil_store_op: SDL_GPU_STOREOP_DONT_CARE)
+    let rp = SDL_BeginGPURenderPass(gpu.cmd, addr cti, 1,
+                                    (if p.depth != nil: addr dsti else: nil))
     SDL_PushGPUVertexUniformData(gpu.cmd, 0, addr p.projection[0],
                                  Uint32(sizeof(p.projection)))
     var vbind = SDL_GPUBufferBinding(buffer: gpu.vbuf, offset: 0)
@@ -360,8 +447,13 @@ proc endFrame*(gpu: GpuContext) =
         var tsb = SDL_GPUTextureSamplerBinding(texture: tex, sampler: smp)
         SDL_BindGPUFragmentSamplers(rp, 0, addr tsb, 1)
       else:
-        SDL_BindGPUGraphicsPipeline(rp, gpu.pipelines[c.kind][c.blend])
-        if c.kind == pkTextured and c.texture != nil:
+        let pipe =
+          if c.stencil == 1: gpu.stencilWritePipe
+          elif c.stencil == 2: gpu.stencilTestPipes[c.kind][c.blend]
+          else: gpu.pipelines[c.kind][c.blend]
+        SDL_BindGPUGraphicsPipeline(rp, pipe)
+        if c.stencil != 0: SDL_SetGPUStencilReference(rp, 1)
+        if c.kind == pkTextured and c.texture != nil and c.stencil != 1:
           let smp = if c.sampler != nil: c.sampler else: gpu.sampler
           var tsb = SDL_GPUTextureSamplerBinding(texture: c.texture, sampler: smp)
           SDL_BindGPUFragmentSamplers(rp, 0, addr tsb, 1)
@@ -386,16 +478,23 @@ proc endFrame*(gpu: GpuContext) =
 proc addTempTexture*(gpu: GpuContext, tex: ptr SDL_GPUTexture) =
   gpu.tempTextures.add tex
 
-proc createTextureFromPixels*(gpu: GpuContext, pixels: pointer, w, h, pitch: int):
-                              ptr SDL_GPUTexture =
+proc createTextureFromPixels*(gpu: GpuContext, pixels: pointer, w, h, pitch: int,
+                              mipmaps = false): ptr SDL_GPUTexture =
   ## Upload tightly-packed RGBA8 pixel data (handling source row pitch) into a
-  ## new sampled GPU texture, via a one-off command buffer + copy pass.
+  ## new sampled GPU texture, via a one-off command buffer + copy pass. With
+  ## mipmaps it allocates the full mip chain and generates it after the upload.
+  var levels = 1'u32
+  var usage = uint32(SDL_GPU_TEXTUREUSAGE_SAMPLER)
+  if mipmaps:
+    var d = max(w, h)
+    while d > 1: d = d div 2; inc levels
+    usage = usage or uint32(SDL_GPU_TEXTUREUSAGE_COLOR_TARGET)  # required to generate
   var tci = SDL_GPUTextureCreateInfo(
     type_field: SDL_GPU_TEXTURETYPE_2D,
     format: SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM,
-    usage: SDL_GPUTextureUsageFlags(SDL_GPU_TEXTUREUSAGE_SAMPLER),
+    usage: SDL_GPUTextureUsageFlags(usage),
     width: Uint32(w), height: Uint32(h),
-    layer_count_or_depth: 1, num_levels: 1,
+    layer_count_or_depth: 1, num_levels: levels,
     sample_count: SDL_GPU_SAMPLECOUNT_1)
   result = SDL_CreateGPUTexture(gpu.device, addr tci)
   if result == nil:
@@ -420,6 +519,7 @@ proc createTextureFromPixels*(gpu: GpuContext, pixels: pointer, w, h, pitch: int
     w: Uint32(w), h: Uint32(h), d: 1)
   SDL_UploadToGPUTexture(cp, addr srcInfo, addr region, false)
   SDL_EndGPUCopyPass(cp)
+  if mipmaps: SDL_GenerateMipmapsForGPUTexture(cmd, result)
   discard SDL_SubmitGPUCommandBuffer(cmd)
   SDL_ReleaseGPUTransferBuffer(gpu.device, tb)
 
@@ -438,6 +538,19 @@ proc createRenderTarget*(gpu: GpuContext, w, h: int32): ptr SDL_GPUTexture =
   if result == nil:
     raise newException(CatchableError, "SDL_CreateGPUTexture (target) failed: " & $SDL_GetError())
 
+proc createDepthTarget*(gpu: GpuContext, w, h: int32): ptr SDL_GPUTexture =
+  ## A depth-stencil target matching a color target's size, for stencil masking.
+  var tci = SDL_GPUTextureCreateInfo(
+    type_field: SDL_GPU_TEXTURETYPE_2D,
+    format: gpu.depthFormat,
+    usage: SDL_GPUTextureUsageFlags(SDL_GPU_TEXTUREUSAGE_DEPTH_STENCIL_TARGET),
+    width: Uint32(w), height: Uint32(h),
+    layer_count_or_depth: 1, num_levels: 1,
+    sample_count: SDL_GPU_SAMPLECOUNT_1)
+  result = SDL_CreateGPUTexture(gpu.device, addr tci)
+  if result == nil:
+    raise newException(CatchableError, "SDL_CreateGPUTexture (depth) failed: " & $SDL_GetError())
+
 proc destroy*(gpu: GpuContext) =
   let dev = gpu.device
   for kind in PipelineKind:
@@ -448,6 +561,14 @@ proc destroy*(gpu: GpuContext) =
   for fr in gpu.samplers:
     for s in fr:
       if s != nil: SDL_ReleaseGPUSampler(dev, s)
+  if gpu.ssTex != nil: SDL_ReleaseGPUTexture(dev, gpu.ssTex)
+  if gpu.screenDepth != nil: SDL_ReleaseGPUTexture(dev, gpu.screenDepth)
+  if gpu.ssDepth != nil: SDL_ReleaseGPUTexture(dev, gpu.ssDepth)
+  if gpu.stencilWritePipe != nil: SDL_ReleaseGPUGraphicsPipeline(dev, gpu.stencilWritePipe)
+  for kind in PipelineKind:
+    for blend in BlendMode:
+      if gpu.stencilTestPipes[kind][blend] != nil:
+        SDL_ReleaseGPUGraphicsPipeline(dev, gpu.stencilTestPipes[kind][blend])
   if gpu.vbuf != nil: SDL_ReleaseGPUBuffer(dev, gpu.vbuf)
   if gpu.ibuf != nil: SDL_ReleaseGPUBuffer(dev, gpu.ibuf)
   if gpu.transferBuf != nil: SDL_ReleaseGPUTransferBuffer(dev, gpu.transferBuf)

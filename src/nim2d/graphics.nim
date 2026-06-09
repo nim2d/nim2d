@@ -52,12 +52,33 @@ proc segQuad(nim2d: Nim2d, p0, p1: Vec2, width: float) =
     mkVert(p1.x - nx, p1.y - ny, c), mkVert(p0.x - nx, p0.y - ny, c)]
   nim2d.emitColored(verts, [0'u32, 1, 2, 0, 2, 3])
 
+proc discAt(nim2d: Nim2d, cx, cy, r: float, segs: int) =
+  ## A filled disc, used to round off line joins so segments meet without a gap.
+  let c = norm(nim2d.color)
+  var verts = @[mkVert(cx, cy, c)]
+  for i in 0 .. segs:
+    let a = TAU * i.float / segs.float
+    verts.add mkVert(cx + cos(a) * r, cy + sin(a) * r, c)
+  var idx: seq[uint32]
+  for i in 1 .. segs:
+    idx.add [0'u32, uint32(i), uint32(i + 1)]
+  nim2d.emitColored(verts, idx)
+
 proc polyline(nim2d: Nim2d, pts: openArray[Vec2], closed: bool, width = 1.0) =
   if pts.len < 2: return
   for i in 0 ..< pts.len - 1:
     nim2d.segQuad(pts[i], pts[i + 1], width)
   if closed and pts.len > 2:
     nim2d.segQuad(pts[^1], pts[0], width)
+  # Round joins: fill the corner at each vertex where two segments meet. Thin
+  # lines don't need it. Open lines keep flat ends; closed ones join all round.
+  if width > 1.5:
+    let r = width / 2
+    let segs = max(8, int(r))
+    if closed:
+      for p in pts: nim2d.discAt(p.x, p.y, r, segs)
+    elif pts.len > 2:
+      for i in 1 ..< pts.len - 1: nim2d.discAt(pts[i].x, pts[i].y, r, segs)
 
 proc fillConvexFan(nim2d: Nim2d, pts: openArray[Vec2]) =
   ## Fan fill from the polygon centroid (correct for convex polygons).
@@ -228,3 +249,17 @@ proc points*(nim2d: Nim2d, pts: openArray[Vec2], size = 1.0) =
       mkVert(p.x - h, p.y - h, c), mkVert(p.x + h, p.y - h, c),
       mkVert(p.x + h, p.y + h, c), mkVert(p.x - h, p.y + h, c)]
     nim2d.emitColored(verts, [0'u32, 1, 2, 0, 2, 3])
+
+proc stencil*(nim2d: Nim2d, mask: proc(nim2d: Nim2d)) =
+  ## Draw `mask` into the stencil buffer, then clip following drawing to where the
+  ## mask drew. The mask shapes themselves are not visible. Call `stencilStop` to
+  ## stop clipping. Needs a window created with `stencil = true`; without it this
+  ## does nothing and drawing is unclipped.
+  if not nim2d.gpu.stencilEnabled: return
+  nim2d.gpu.stencilMode = 1
+  mask(nim2d)
+  nim2d.gpu.stencilMode = 2
+
+proc stencilStop*(nim2d: Nim2d) =
+  ## Stop clipping to the stencil mask; drawing appears everywhere again.
+  nim2d.gpu.stencilMode = 0

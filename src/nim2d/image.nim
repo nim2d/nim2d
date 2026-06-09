@@ -63,7 +63,7 @@ proc setWrap*(t: Texture, wrap: Wrap) =
 
 # --- images ----------------------------------------------------------------
 
-proc newImage*(nim2d: Nim2d, filename: string): Image =
+proc newImage*(nim2d: Nim2d, filename: string, mipmaps = false): Image =
   var surf = IMG_Load(filename.cstring)
   if surf == nil:
     raise newException(IOError, "could not load image '" & filename & "': " & $SDL_GetError())
@@ -73,7 +73,7 @@ proc newImage*(nim2d: Nim2d, filename: string): Image =
     if conv == nil:
       raise newException(IOError, "could not convert image '" & filename & "'")
     surf = conv
-  let tex = nim2d.gpu.createTextureFromPixels(surf.pixels, surf.w, surf.h, surf.pitch)
+  let tex = nim2d.gpu.createTextureFromPixels(surf.pixels, surf.w, surf.h, surf.pitch, mipmaps)
   result = Image(tex: tex, width: surf.w, height: surf.h,
                  tint: (255'u8, 255'u8, 255'u8, 255'u8))
   SDL_DestroySurface(surf)

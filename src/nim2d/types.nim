@@ -48,6 +48,7 @@ type
 
   Canvas* = ref object of Texture
     ## A render target (GPU texture created with COLOR_TARGET usage).
+    depth*: ptr SDL_GPUTexture   ## paired depth-stencil target, only when stencil is enabled
 
   Quad* = object
     ## A rectangular sub-region of a texture, as texcoords plus its pixel size.
@@ -89,6 +90,7 @@ type
     sampler*: ptr SDL_GPUSampler
     shader*: Shader
     scissor*: Scissor
+    stencil*: uint8
     firstIndex*: uint32
     indexCount*: uint32
 
@@ -96,6 +98,7 @@ type
     ## One render pass: a target texture plus the draws recorded against it.
     ## (A new pass is started whenever the render target or clear changes.)
     target*: ptr SDL_GPUTexture
+    depth*: ptr SDL_GPUTexture
     w*: int32
     h*: int32
     doClear*: bool
@@ -110,6 +113,17 @@ type
     shaderFormat*: SDL_GPUShaderFormat  ## MSL or SPIR-V, chosen from the device backend
     sampler*: ptr SDL_GPUSampler        ## default sampler (linear, clamp)
     samplers*: array[Filter, array[Wrap, ptr SDL_GPUSampler]]  ## cache for other combos
+    ssFactor*: int32                    ## supersample factor for anti-aliasing (1 = off)
+    ssTex*: ptr SDL_GPUTexture          ## the high-res offscreen target when supersampling
+    ssW*, ssH*: int32                   ## supersample target size
+    frameW*, frameH*: int32             ## logical frame size, for the downscale blit
+    stencilEnabled*: bool               ## whether the depth-stencil machinery is built
+    depthFormat*: SDL_GPUTextureFormat  ## chosen depth-stencil format
+    screenDepth*, ssDepth*: ptr SDL_GPUTexture  ## depth-stencil targets for screen/SS
+    screenDepthW*, screenDepthH*: int32 ## size the screen depth target was made at
+    stencilMode*: uint8                 ## 0 none, 1 write the mask, 2 test against it
+    stencilWritePipe*: ptr SDL_GPUGraphicsPipeline
+    stencilTestPipes*: array[PipelineKind, array[BlendMode, ptr SDL_GPUGraphicsPipeline]]
     whiteTex*: ptr SDL_GPUTexture     ## 1x1 white, bound when a shader draw has no texture
     pipelines*: array[PipelineKind, array[BlendMode, ptr SDL_GPUGraphicsPipeline]]
 

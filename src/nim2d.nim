@@ -72,16 +72,16 @@ proc setFont*(nim2d: Nim2d, font: Font) =
 
 proc setCanvas*(nim2d: Nim2d) =
   ## Render to the screen (default target).
-  nim2d.gpu.setTarget(nim2d.gpu.swTex, nim2d.width, nim2d.height)
+  nim2d.gpu.setTarget(nim2d.gpu.swTex, nim2d.width, nim2d.height, nim2d.gpu.screenDepth)
 
 proc setCanvas*(nim2d: Nim2d, canvas: Canvas) =
   ## Render to a canvas (off-screen target). Call inside `draw`.
-  nim2d.gpu.setTarget(canvas.tex, canvas.width, canvas.height)
+  nim2d.gpu.setTarget(canvas.tex, canvas.width, canvas.height, canvas.depth)
 
 proc clear*(nim2d: Nim2d, r, g, b: uint8, a: uint8 = 255) =
   ## Clear the current render target. Call inside `draw`.
   let p = nim2d.gpu.passes[^1]
-  nim2d.gpu.clearTarget(p.target, p.w, p.h, (r, g, b, a))
+  nim2d.gpu.clearTarget(p.target, p.w, p.h, (r, g, b, a), p.depth)
 
 proc clear*(nim2d: Nim2d) =
   nim2d.clear(nim2d.background.r, nim2d.background.g, nim2d.background.b)
@@ -89,7 +89,7 @@ proc clear*(nim2d: Nim2d) =
 # --- lifecycle -------------------------------------------------------------
 
 proc newNim2d*(title: string, x, y, width, height: cint,
-               background: Color, highDpi = false): Nim2d =
+               background: Color, highDpi = false, aa: int32 = 1, stencil = false): Nim2d =
   if not SDL_Init(SDL_InitFlags(SDL_INIT_VIDEO or SDL_INIT_GAMEPAD)):
     raise newException(CatchableError, "SDL_Init failed: " & $SDL_GetError())
 
@@ -106,7 +106,7 @@ proc newNim2d*(title: string, x, y, width, height: cint,
 
   result = Nim2d(
     width: width, height: height,
-    gpu: newGpuContext(win),
+    gpu: newGpuContext(win, aa, stencil),
     background: background,
     fs: newFilesystem(),
     color: (255'u8, 255'u8, 255'u8, 255'u8),

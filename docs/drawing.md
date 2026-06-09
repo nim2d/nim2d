@@ -85,7 +85,18 @@ sprite.draw(nim2d, x, y, angle, 0.5, 0.5, w.float / 2, h.float / 2)
 
 You can tint an image with `setColorMod` and fade it with `setAlphaMod`. There are also `getWidth`, `getHeight` and `getDimensions`.
 
-By default an image is sampled smoothly, which is right for photos and high-resolution art but blurs pixel art when you scale it up. Call `setFilter(filNearest)` for sharp, blocky sampling that keeps pixel art crisp, or `setFilter(filLinear)` to go back. `setWrap` controls what happens when texcoords run outside the image, which comes up when you draw a quad larger than the texture: `wrapClamp` holds the edge pixel (the default), `wrapRepeat` tiles the image, and `wrapMirror` tiles it flipping every other copy. Both settings apply to canvases as well.
+By default an image is sampled smoothly, which is right for photos and high-resolution art but blurs pixel art when you scale it up. Call `setFilter(filNearest)` for sharp, blocky sampling that keeps pixel art crisp, or `setFilter(filLinear)` to go back. `setWrap` controls what happens when texcoords run outside the image, which comes up when you draw a quad larger than the texture: `wrapClamp` holds the edge pixel (the default), `wrapRepeat` tiles the image, and `wrapMirror` tiles it flipping every other copy. Both settings apply to canvases as well. Pass `mipmaps = true` to `newImage` to build a mipmap chain, which stops a texture from shimmering when it is drawn much smaller than its native size.
+
+Thick lines join cleanly: when the width is more than a couple of pixels, the corners where segments meet are rounded so there are no gaps. For smoother edges everywhere, create the window with `newNim2d(..., aa = 2)`, which renders the frame at twice the resolution and scales it down, an easy supersampled anti-aliasing that smooths shapes, lines and shaders alike at the cost of drawing more pixels.
+
+To clip drawing to an arbitrary shape, create the window with `newNim2d(..., stencil = true)` and use `stencil`. You give it a proc that draws the mask shapes; those shapes are not drawn themselves, they only mark the region. After that, everything you draw shows up only inside the mask, until you call `stencilStop`.
+
+```nim
+nim2d.stencil(proc(n: Nim2d) =
+  n.circle(cx, cy, r, filled = true))   # the mask region
+nim2d.draw(...)                          # appears only inside the circle
+nim2d.stencilStop()                      # back to drawing everywhere
+```
 
 ## Pixel data
 

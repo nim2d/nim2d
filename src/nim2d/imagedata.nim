@@ -117,11 +117,11 @@ proc save*(d: ImageData, filename: string) =
   ## Alias for `encode`: save the pixel buffer to a PNG file.
   d.encode(filename)
 
-proc newImage*(nim2d: Nim2d, data: ImageData): Image =
+proc newImage*(nim2d: Nim2d, data: ImageData, mipmaps = false): Image =
   ## Upload a CPU pixel buffer to a drawable GPU image.
   if data.width <= 0 or data.height <= 0:
     raise newException(ValueError, "newImage: image data is empty")
   let tex = nim2d.gpu.createTextureFromPixels(
-    addr data.pixels[0], data.width.int, data.height.int, data.width.int * 4)
+    addr data.pixels[0], data.width.int, data.height.int, data.width.int * 4, mipmaps)
   Image(tex: tex, width: data.width, height: data.height,
         tint: (255'u8, 255'u8, 255'u8, 255'u8))
