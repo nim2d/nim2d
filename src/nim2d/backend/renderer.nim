@@ -153,20 +153,21 @@ proc buildPipelines(gpu: GpuContext) =
   SDL_ReleaseGPUShader(dev, fsColor)
   SDL_ReleaseGPUShader(dev, fsTex)
 
-proc createShaderPipelines*(gpu: GpuContext, fragmentSrc: string,
+proc createShaderPipelines*(gpu: GpuContext, fragBlob: string, fragEntry: cstring,
+                            fragFormat: SDL_GPUShaderFormat,
                             hasUniform: bool): array[BlendMode, ptr SDL_GPUGraphicsPipeline] =
-  ## Build one pipeline per blend mode from a user fragment shader (entrypoint
-  ## "frag"), reusing the built-in vertex shader. The fragment gets a sampler at
-  ## slot 0 and, when hasUniform is set, a fragment uniform buffer at slot 0.
-  ## The user source is MSL, so user shaders run on the Metal backend.
+  ## Build one pipeline per blend mode from a user fragment shader, reusing the
+  ## built-in vertex shader. The fragment gets a sampler at slot 0 and, when
+  ## hasUniform is set, a fragment uniform buffer at slot 0. The fragment's blob,
+  ## entry point and format are passed in: MSL source uses entry "frag" (Metal
+  ## only), while precompiled SPIR-V/MSL uses "main"/"main0" and runs everywhere.
   let dev = gpu.device
   let spirv = gpu.shaderFormat == SDL_GPUShaderFormat(SDL_GPU_SHADERFORMAT_SPIRV)
   let vs = makeShader(dev, (if spirv: VertexSPIRV else: VertexMSL),
                       (if spirv: "main".cstring else: "main0".cstring),
                       SDL_GPU_SHADERSTAGE_VERTEX, 0, 1, gpu.shaderFormat)
-  let fs = makeShader(dev, fragmentSrc, "frag", SDL_GPU_SHADERSTAGE_FRAGMENT,
-                      1, (if hasUniform: 1'u32 else: 0'u32),
-                      SDL_GPUShaderFormat(SDL_GPU_SHADERFORMAT_MSL))
+  let fs = makeShader(dev, fragBlob, fragEntry, SDL_GPU_SHADERSTAGE_FRAGMENT,
+                      1, (if hasUniform: 1'u32 else: 0'u32), fragFormat)
   for blend in BlendMode:
     result[blend] = makePipeline(gpu, vs, fs, blend)
   SDL_ReleaseGPUShader(dev, vs)

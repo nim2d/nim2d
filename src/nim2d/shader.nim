@@ -13,10 +13,13 @@
 ## is the pixel position, tex is the current texture (a white pixel when drawing
 ## shapes), and the uniform is filled by `send`.
 ##
-## This is Metal only. A cross-platform path (GLSL or HLSL through
-## SDL_shadercross) is not wired up yet.
+## MSL source runs on the Metal backend only. To write a shader that runs
+## everywhere, author it in GLSL, compile it offline to SPIR-V and MSL the same
+## way the built-in shaders are (see the shaders Makefile), and pass both blobs
+## to the second `newShader` below, which picks the one the backend wants.
 
 import types
+import backend/sdl
 import backend/renderer
 
 const Preamble = """
@@ -26,13 +29,29 @@ struct VSOutput { float4 position [[position]]; float2 uv [[user(locn0)]]; float
 """
 
 proc newShader*(nim2d: Nim2d, fragmentSrc: string, uniformFloats = 0): Shader =
-  ## Compile a fragment shader. `uniformFloats` is how many float32 the fragment
-  ## uniform holds (0 for none); fill it later with `send`.
+  ## Compile a fragment shader from MSL source (entry "frag"); runs on Metal.
+  ## `uniformFloats` is how many float32 the fragment uniform holds (0 for none);
+  ## fill it later with `send`.
   result = Shader(hasUniform: uniformFloats > 0)
   if uniformFloats > 0:
     result.uniform = newSeq[byte](uniformFloats * sizeof(float32))
-  result.pipelines = nim2d.gpu.createShaderPipelines(Preamble & fragmentSrc,
-                                                     result.hasUniform)
+  result.pipelines = nim2d.gpu.createShaderPipelines(Preamble & fragmentSrc, "frag",
+      SDL_GPUShaderFormat(SDL_GPU_SHADERFORMAT_MSL), result.hasUniform)
+
+proc newShader*(nim2d: Nim2d, spirv, msl: string, uniformFloats = 0): Shader =
+  ## Compile a fragment shader from precompiled cross-platform blobs: SPIR-V for
+  ## Vulkan, MSL for Metal, both produced offline from one GLSL source. The blob
+  ## matching the live backend is used, so this runs on macOS, iOS, Linux and
+  ## Windows. The GLSL takes `vUV` at location 0 and `vColor` at location 1 from
+  ## the vertex, a sampler in set 2, and (if used) a uniform buffer in set 3.
+  result = Shader(hasUniform: uniformFloats > 0)
+  if uniformFloats > 0:
+    result.uniform = newSeq[byte](uniformFloats * sizeof(float32))
+  let useSpv = nim2d.gpu.shaderFormat == SDL_GPUShaderFormat(SDL_GPU_SHADERFORMAT_SPIRV)
+  result.pipelines = nim2d.gpu.createShaderPipelines(
+    (if useSpv: spirv else: msl),
+    (if useSpv: "main".cstring else: "main0".cstring),
+    nim2d.gpu.shaderFormat, result.hasUniform)
 
 proc send*(shader: Shader, values: openArray[float32]) =
   ## Fill the fragment uniform buffer with float32 values.

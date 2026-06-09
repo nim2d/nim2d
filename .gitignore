@@ -16,6 +16,9 @@ examples/*
 !examples/*.nim
 !examples/*.ttf
 !examples/*.png
+!examples/*.frag
+!examples/*.spv
+!examples/*.metal
 !examples/assets/
 examples/assets/*
 !examples/assets/*.wav

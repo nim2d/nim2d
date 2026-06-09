@@ -13,8 +13,9 @@ These docs come in two parts. The guides are hand-written and walk through how t
 - [Audio](audio.html)
 - [System](system.html)
 - [Physics](physics.html)
+- [Parity](parity.html), how close nim2d is to love2d, module by module
 - [Examples](examples.html)
 - [API reference](api/nim2d.html), the main module, with links to every other module under it
 - [Symbol index](api/theindex.html), every type and proc in one list
 
-nim2d is pre-alpha. It runs on macOS today through SDL3 and its GPU API. Shapes, images, text, canvases, a transform stack, shaders and input all work, and so do sound and the non-graphics pieces like a seeded random generator, noise, file saving and data encoding. The one real gap is that shaders are Metal only, so running on Linux and Windows needs cross-platform shaders, which is still to come.
+nim2d is pre-alpha. It runs on macOS, Linux and Windows through SDL3 and its GPU API, drawing on Metal or Vulkan depending on the platform. Shapes, images, text, canvases, a transform stack, shaders and input all work, and so do sound, physics, threads and the non-graphics pieces like a seeded random generator, noise, file saving and data encoding. See the parity page for how close it is to love2d and what is still missing.
