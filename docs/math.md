@@ -1,6 +1,6 @@
 # Math
 
-The math module is plain Nim, so it works the same on every platform and never touches the GPU. It gives you random numbers, noise, Bezier curves, polygon triangulation, and a handful of small geometry and color helpers.
+The math module is plain Nim, so it works the same on every platform and never touches the GPU. It gives you random numbers, noise, Bezier curves, polygon triangulation, vectors with the usual operators, and a handful of small geometry and color helpers.
 
 ## Random
 
@@ -55,3 +55,13 @@ nim2d.line(curve.render(40))       # draw it
 `distance` and `angle` work on either four numbers or two points, and `lerp` blends two numbers. `gammaToLinear` and `linearToGamma` convert a color, or a single channel, between sRGB gamma space and linear space, which matters when you blend or light colors and want the result to look right.
 
 There is also a standalone transform. `newTransform` gives you an identity transform you can `translate`, `rotate`, `scale` and `shear`, and `transformPoint` runs a point through it. This is the same matrix the drawing transform stack uses, so it composes the same way.
+
+## Vectors
+
+`Vec2` is the `(x, y)` float tuple used for positions throughout nim2d, and the math module gives it the usual operators, so you can do vector math directly: `+`, `-`, unary `-`, `*` and `/` by a number, and `+=`, `-=`, `*=`. `vec2(x, y)` makes one, `length` and `lengthSq` measure it, `normalized` scales it to length one, `dot` is the dot product, `lerp` blends two vectors, `rotated` turns one by an angle, and `fromAngle` builds one from an angle and a length. Because `Vec2` is a plain tuple, all of this works on bare literals like `(10.0, 20.0)` too.
+
+```nim
+var pos = vec2(100, 100)
+let vel = fromAngle(0.4, 60)   # 60 px/s heading at 0.4 radians
+pos += vel * dt
+```

@@ -5,6 +5,7 @@ import nim2d/backend/sdl
 import nim2d/types
 import nim2d/backend/renderer
 import nim2d/graphics
+import nim2d/color
 import nim2d/image
 import nim2d/canvas
 import nim2d/font
@@ -27,7 +28,7 @@ import nim2d/system
 import nim2d/touch
 import nim2d/thread
 
-export types, graphics, image, canvas, font, timer, window
+export types, graphics, color, image, canvas, font, timer, window
 export keyboard, mouse, gamepad, spritebatch, mesh, particlesystem, shader
 export math, data, imagedata, filesystem, audio, system, touch, thread
 export sdl  # SDL_Scancode, SDL_SCANCODE_*, etc. for callback handlers
@@ -85,6 +86,47 @@ proc clear*(nim2d: Nim2d, r, g, b: uint8, a: uint8 = 255) =
 
 proc clear*(nim2d: Nim2d) =
   nim2d.clear(nim2d.background.r, nim2d.background.g, nim2d.background.b)
+
+# --- scoped state ----------------------------------------------------------
+
+template withColor*(nim2d: Nim2d, c: Color, body: untyped) =
+  ## Run `body` with the draw color set to `c`, then restore the previous color.
+  let savedColor = nim2d.color
+  nim2d.setColor(c)
+  body
+  nim2d.setColor(savedColor)
+
+template withFont*(nim2d: Nim2d, f: Font, body: untyped) =
+  ## Run `body` with `f` as the font, then restore the previous font.
+  let savedFont = nim2d.font
+  nim2d.setFont(f)
+  body
+  nim2d.setFont(savedFont)
+
+template withBlend*(nim2d: Nim2d, mode: BlendMode, body: untyped) =
+  ## Run `body` with the given blend mode, then restore the previous one.
+  let savedBlend = nim2d.blend
+  nim2d.setBlendMode(mode)
+  body
+  nim2d.setBlendMode(savedBlend)
+
+template withCanvas*(nim2d: Nim2d, canvas: Canvas, body: untyped) =
+  ## Run `body` drawing into `canvas`, then switch back to the screen.
+  nim2d.setCanvas(canvas)
+  body
+  nim2d.setCanvas()
+
+template transformed*(nim2d: Nim2d, move: Vec2 = (0.0, 0.0),
+                      angle = 0.0, zoom = 1.0, body: untyped) =
+  ## Run `body` inside a pushed transform, translated by `move`, turned by
+  ## `angle` radians and scaled uniformly by `zoom`, then pop back. Any argument
+  ## can be left out, so `transformed(move = vec2(x, y)): ...` is enough.
+  nim2d.push()
+  nim2d.translate(move.x, move.y)
+  nim2d.rotate(angle)
+  nim2d.scale(zoom, zoom)
+  body
+  nim2d.pop()
 
 # --- lifecycle -------------------------------------------------------------
 

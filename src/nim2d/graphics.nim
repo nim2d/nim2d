@@ -125,8 +125,17 @@ iterator arcPoints(cx, cy, rx, ry, a1, a2: float, segments: int): Vec2 =
 proc setColor*(nim2d: Nim2d, r, g, b: uint8, a: uint8 = 255) =
   nim2d.color = (r, g, b, a)
 
+proc setColor*(nim2d: Nim2d, c: Color) =
+  ## Set the draw color from a Color, so named colors, `rgb`, `gray` and hex all
+  ## work: `setColor(orange)`, `setColor(rgb(255, 120, 60))`, `setColor(color("#ff7a3c"))`.
+  nim2d.color = c
+
 proc setBackgroundColor*(nim2d: Nim2d, r, g, b: uint8, a: uint8 = 255) =
   nim2d.background = (r, g, b, a)
+
+proc setBackgroundColor*(nim2d: Nim2d, c: Color) =
+  ## Set the background color from a Color.
+  nim2d.background = c
 
 proc setBlendMode*(nim2d: Nim2d, mode: BlendMode) =
   nim2d.blend = mode

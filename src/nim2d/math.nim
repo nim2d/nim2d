@@ -18,6 +18,48 @@ import transform
 
 export transform
 
+# --- vectors ---------------------------------------------------------------
+
+# Vec2 is the (x, y) float tuple used for positions all over nim2d, so these
+# operators work on any of them, including plain literals like (10.0, 20.0).
+
+func vec2*(x, y: float): Vec2 =
+  ## A 2D vector.
+  (x, y)
+
+func `+`*(a, b: Vec2): Vec2 = (a.x + b.x, a.y + b.y)
+func `-`*(a, b: Vec2): Vec2 = (a.x - b.x, a.y - b.y)
+func `-`*(a: Vec2): Vec2 = (-a.x, -a.y)
+func `*`*(a: Vec2, s: float): Vec2 = (a.x * s, a.y * s)
+func `*`*(s: float, a: Vec2): Vec2 = (a.x * s, a.y * s)
+func `/`*(a: Vec2, s: float): Vec2 = (a.x / s, a.y / s)
+proc `+=`*(a: var Vec2, b: Vec2) = a = (a.x + b.x, a.y + b.y)
+proc `-=`*(a: var Vec2, b: Vec2) = a = (a.x - b.x, a.y - b.y)
+proc `*=`*(a: var Vec2, s: float) = a = (a.x * s, a.y * s)
+
+func dot*(a, b: Vec2): float = a.x * b.x + a.y * b.y
+func lengthSq*(a: Vec2): float = a.x * a.x + a.y * a.y
+func length*(a: Vec2): float = sqrt(a.x * a.x + a.y * a.y)
+
+func normalized*(a: Vec2): Vec2 =
+  ## The unit vector pointing the same way as a, or (0, 0) if a has no length.
+  let l = a.length
+  if l == 0: (0.0, 0.0) else: (a.x / l, a.y / l)
+
+func lerp*(a, b: Vec2, t: float): Vec2 =
+  ## Linear interpolation from a to b by t.
+  (a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t)
+
+func rotated*(a: Vec2, angle: float): Vec2 =
+  ## a turned counter-clockwise by angle radians.
+  let c = cos(angle)
+  let s = sin(angle)
+  (a.x * c - a.y * s, a.x * s + a.y * c)
+
+func fromAngle*(angle: float, magnitude = 1.0): Vec2 =
+  ## A vector of the given length pointing at angle radians.
+  (cos(angle) * magnitude, sin(angle) * magnitude)
+
 # --- seeded generator (PCG32) ----------------------------------------------
 
 type

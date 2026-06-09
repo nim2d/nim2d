@@ -4,7 +4,7 @@ All drawing happens inside the `draw` callback. The window has already cleared t
 
 ## Color
 
-`setColor` sets the color used by every shape and by text until you change it. The alpha argument is optional and defaults to fully opaque.
+`setColor` sets the color used by every shape and by text until you change it. The alpha argument is optional and defaults to fully opaque. You can pass three or four bytes, or a single `Color` written however reads best: by name (`setColor(orange)`), from bytes (`setColor(rgb(255, 120, 60))`), from a hex string (`setColor(color("#ff7a3c"))`), or as a gray level (`setColor(gray(128))`). The window background takes a `Color` the same way. `withAlpha` gives back a color with a different alpha, and `lerp` blends two colors.
 
 ```nim
 nim2d.setColor(255, 120, 60)        # opaque orange
@@ -15,7 +15,9 @@ nim2d.setColor(255, 120, 60, 128)   # half transparent
 
 ## Transforms
 
-Every shape, image and bit of text you draw goes through the current transform, so instead of working out rotated or scaled coordinates yourself you move the coordinate system and draw at simple positions. `translate` shifts the origin, `rotate` turns it by an angle in radians, `scale` stretches it, and `shear` slants it. `origin` resets back to no transform.
+Every shape, image and bit of text you draw goes through the current transform, so instead of working out rotated or scaled coordinates yourself you move the coordinate system and draw at simple positions. `translate` shifts the origin, `rotate` turns it by an angle in radians, `scale` stretches it, and `shear` slants it. `push` and `pop` save and restore the whole transform so a change stays local. `origin` resets back to no transform.
+
+For the common case of drawing a few things under a transform and then putting it back, `transformed` wraps a `push` and `pop` around a block, so `nim2d.transformed(move = vec2(x, y), angle = a, zoom = 2.0): ...` runs the block translated, turned and scaled, then restores. In the same spirit, `withColor`, `withFont`, `withBlend` and `withCanvas` each set one piece of state for the duration of a block and put it back afterward, so you never have to remember to reset it.
 
 `push` saves the current transform and `pop` restores it, so you can change things locally and undo them. They nest, which is what makes it easy to build a thing out of parts that each have their own position and spin.
 
