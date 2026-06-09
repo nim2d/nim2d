@@ -57,8 +57,13 @@ type
 
   Font* = ref object
     engine*: pointer      ## TTF_TextEngine (GPU text engine)
-    font*: pointer        ## TTF_Font
+    font*: pointer        ## TTF_Font (nil for a bitmap/image font)
     size*: cint
+    img*: Image           ## glyph sheet, set for a bitmap/image font
+    glyphSet*: string     ## the characters, in image order
+    glyphX*, glyphW*: seq[int32]  ## each glyph's x and width in the sheet
+    imgH*: int32          ## glyph height (the sheet height)
+    spacing*: int32       ## pixels added between glyphs
 
   Shader* = ref object
     ## A user fragment shader compiled into one pipeline per blend mode, with an

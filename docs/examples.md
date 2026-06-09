@@ -23,5 +23,6 @@ The `examples` folder has runnable demos, each a single file. Run any of them wi
 - `threads.nim` runs a prime count on a background thread and reports its progress over a channel, while a spinner keeps turning at full frame rate to show the main loop never blocks.
 - `touch.nim` draws a dot under each finger and ripples out where you press, using the touch callbacks and polling. On a desktop the trackpad usually acts as a touch device.
 - `polish.nim` tours the graphics-polish features: nearest and linear filtering, texture wrap, mipmaps, point size, round joins on thick lines, supersampled anti-aliasing (`aa = 2`) and stencil masking (`stencil = true`).
+- `bitmapfont.nim` builds a small pixel font in memory and draws scaled, tinted text with it, showing `newImageFont`.
 
 These are a good place to see the API used in context. snake and pong show input and game state, particles shows blend modes, clock shows building shapes from lines and trigonometry, and all shows images, canvases and text together.

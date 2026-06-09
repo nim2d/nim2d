@@ -16,7 +16,7 @@ Status words: **done** means the capability is there and used in examples or tes
 - Sprite batches, meshes (triangle list, fan, strip), particle systems. Done.
 - Blend modes, scissor, and a stencil buffer for arbitrary-shape masking (opt-in with `stencil = true`). Done.
 - Anti-aliasing through supersampling (`aa = 2`), not hardware MSAA. Done, by a different route than love.
-- Text via SDL3_ttf as UTF-8. **basic**: each string rasterizes to a texture per frame; a glyph-atlas GPU text engine, and image and bitmap fonts, are not there yet.
+- Text: TrueType via SDL3_ttf as UTF-8, and bitmap/image fonts via `newImageFont`. **mostly done**: each TTF string still rasterizes to a texture per frame, so a glyph-atlas engine is the remaining optimization.
 - Shaders: built-in shaders run cross-platform (Metal and Vulkan); a user `newShader` takes MSL source for Metal, or precompiled SPIR-V plus MSL blobs to run everywhere. **partial**: there is no runtime GLSL compile (that would need the SDL_shadercross runtime library), so cross-platform user shaders must be precompiled offline.
 - Meshes with custom vertex formats and instancing: **not yet**. The batch renderer is built around one vertex format, so this is an architectural addition; the sprite batch already covers the common "many of the same" case.
 
@@ -35,7 +35,7 @@ Status words: **done** means the capability is there and used in examples or tes
 ## Image, font, filesystem, data, math
 
 - love.image: **done**. CPU `ImageData` buffers, per-pixel read and write, `mapPixel`, upload to a texture, save to PNG.
-- love.font: **basic** (see Graphics, text).
+- love.font: **mostly done**. TrueType fonts and bitmap/image fonts; the glyph-atlas optimization is the gap (see Graphics, text).
 - love.filesystem: **done**. A sandboxed save directory and read-only source directory, read, write, append, a lines iterator, directory listing, info, mount points.
 - love.data: **done**. base64 and hex, md5/sha1/sha256/sha512 digests, zlib/gzip/deflate compression, and a small endian-aware integer packer.
 - love.math: **done**. A seeded PCG random with the `random` family, value/Perlin/simplex noise, Bezier curves, ear-clipping triangulation, a standalone transform, and helpers.
@@ -55,7 +55,7 @@ Status words: **done** means the capability is there and used in examples or tes
 
 ## Remaining gaps, in one place
 
-- A glyph-atlas text engine, plus image and bitmap fonts (font is currently basic).
+- A glyph-atlas text engine, so TrueType text does not re-rasterize each frame (bitmap fonts already exist).
 - Cross-platform user shaders authored as live GLSL (currently precompiled offline or MSL-on-Metal); this needs the SDL_shadercross runtime library as an optional desktop layer.
 - DXIL for Direct3D 12 on Windows machines without a Vulkan driver; this needs a shadercross build with the DirectX compiler.
 - Mesh custom vertex formats and instancing.

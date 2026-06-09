@@ -125,6 +125,24 @@ let frame = newQuad(64, 0, 64, 64, sheet.getWidth.float, sheet.getHeight.float)
 sheet.draw(nim2d, frame, x, y)
 ```
 
+## Text
+
+Load a font and draw with it. The usual path is a TrueType font: `newFont("font.ttf", 24)`, then `setFont` and `print`. `print` draws in the current color with optional rotation and scale, and `getSize` measures a string.
+
+```nim
+let font = newFont("font.ttf", 24)
+nim2d.setFont(font)
+nim2d.print("hello", 20, 20)
+```
+
+For pixel-art text there are bitmap fonts. A bitmap font is a glyph sheet where the characters sit in a row, separated by columns of the sheet's top-left pixel color. Load it with `newImageFont`, listing the characters in image order, and use it like any other font; it is sampled crisply and scales to any size.
+
+```nim
+let pixels = newImageFont("font.png", "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 ")
+nim2d.setFont(pixels)
+nim2d.print("SCORE 1234", 20, 20, 0, 4, 4)   # scaled up 4x
+```
+
 ## Sprite batches
 
 When you draw the same texture many times, a sprite batch lets you build the whole lot up and draw it in one call. Make one with `newSpriteBatch`, `add` each copy with a position and optional rotation, scale and origin, then `draw` the batch. `clear` empties it, and `setColor` tints whatever you add after it. You can add a quad instead of the whole texture.

@@ -4,11 +4,13 @@
 ## as a transient texture, and draws it as a quad. UTF-8 in, no rune-pointer
 ## juggling.
 
+import std/strutils
 import types
 import backend/sdl
 import backend/sdlttf
 import backend/renderer
 import image
+import imagedata
 
 var ttfReady = false
 
@@ -25,11 +27,45 @@ proc newFont*(filename: string, size: cint): Font =
     raise newException(IOError, "could not open font '" & filename & "': " & $SDL_GetError())
   Font(font: cast[pointer](f), size: size)
 
+proc newImageFont*(nim2d: Nim2d, data: ImageData, glyphs: string,
+                   spacing: int32 = 1): Font =
+  ## A bitmap font from a glyph sheet. The glyphs sit in a row separated by
+  ## columns of the sheet's top-left pixel color, and `glyphs` lists the
+  ## characters in that order. It is sampled crisply (nearest) and tinted by the
+  ## current color, like the TTF path. Good for pixel-art text.
+  let sep = data.getPixel(0, 0)
+  var xs, ws: seq[int32]
+  var x = 0'i32
+  while x < data.width:
+    while x < data.width and data.getPixel(x, 0) == sep: inc x   # skip separators
+    if x >= data.width: break
+    let start = x
+    while x < data.width and data.getPixel(x, 0) != sep: inc x    # the glyph run
+    xs.add start
+    ws.add(x - start)
+  let img = nim2d.newImage(data)
+  img.setFilter(filNearest)
+  Font(img: img, glyphSet: glyphs, glyphX: xs, glyphW: ws,
+       imgH: data.height, spacing: spacing, size: data.height)
+
+proc newImageFont*(nim2d: Nim2d, filename, glyphs: string, spacing: int32 = 1): Font =
+  ## A bitmap font loaded from an image file. See the other overload.
+  nim2d.newImageFont(newImageData(filename), glyphs, spacing)
+
 proc getAscent*(font: Font): int = TTF_GetFontAscent(cast[ptr TTF_Font](font.font)).int
 proc getDescent*(font: Font): int = TTF_GetFontDescent(cast[ptr TTF_Font](font.font)).int
-proc getHeight*(font: Font): int = TTF_GetFontHeight(cast[ptr TTF_Font](font.font)).int
+proc getHeight*(font: Font): int =
+  if font.img != nil: return font.imgH.int
+  TTF_GetFontHeight(cast[ptr TTF_Font](font.font)).int
 
 proc getSize*(font: Font, text: string): tuple[w, h: int32] =
+  if font.img != nil:
+    var w = 0'i32
+    for c in text:
+      let idx = font.glyphSet.find(c)
+      if idx >= 0 and idx < font.glyphW.len: w += font.glyphW[idx] + font.spacing
+      else: w += font.imgH div 2
+    return (w, font.imgH)
   var w, h: cint
   discard TTF_GetStringSize(cast[ptr TTF_Font](font.font), text.cstring,
                             csize_t(text.len), addr w, addr h)
@@ -38,11 +74,26 @@ proc getSize*(font: Font, text: string): tuple[w, h: int32] =
 proc print*(nim2d: Nim2d, text: string, x, y: float, angle: float = 0,
             sx: float = 1, sy: float = 1) =
   ## Draw `text` in the current color using the current font. Call inside `draw`.
-  if nim2d.font == nil or nim2d.font.font == nil:
+  if nim2d.font == nil or text.len == 0:
     return
-  if text.len == 0:
+  let fnt = nim2d.font
+  if fnt.img != nil:
+    # Bitmap font: one quad per glyph. Rotation is not applied per call; for
+    # rotated bitmap text, wrap the call in the transform stack.
+    fnt.img.tint = nim2d.color
+    var penX = x
+    for c in text:
+      let idx = fnt.glyphSet.find(c)
+      if idx >= 0 and idx < fnt.glyphX.len:
+        let q = newQuad(fnt.glyphX[idx].float, 0, fnt.glyphW[idx].float, fnt.imgH.float,
+                        fnt.img.width.float, fnt.img.height.float)
+        fnt.img.draw(nim2d, q, penX, y, 0, sx, sy)
+        penX += (fnt.glyphW[idx].float + fnt.spacing.float) * sx
+      else:
+        penX += fnt.imgH.float * 0.5 * sx
     return
-  let f = cast[ptr TTF_Font](nim2d.font.font)
+  if fnt.font == nil: return
+  let f = cast[ptr TTF_Font](fnt.font)
   let col = SDL_Color(r: nim2d.color.r, g: nim2d.color.g, b: nim2d.color.b, a: nim2d.color.a)
   var surf = TTF_RenderText_Blended(f, text.cstring, csize_t(text.len), col)
   if surf == nil: return
