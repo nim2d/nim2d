@@ -21,25 +21,31 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # mkdocstrings-nim parses the source with the Nim compiler to pull out the
+      # doc comments. That is a parse only, no semantic analysis, so the SDL3 and
+      # Box2D libraries are not needed and no window opens here. The screenshots
+      # are committed in docs/assets.
       - name: Install Nim
         uses: jiro4989/setup-nim-action@v2
         with:
           nim-version: '2.2.x'
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 
-      # nim doc runs semantic analysis only, so the Nim packages are needed
-      # but the SDL3 and Box2D libraries themselves are not. The screenshots
-      # are committed in docs/assets, so no window opens here either.
-      - name: Install Nim dependencies
-        run: nimble install --depsOnly -y
+      - name: Install Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install the docs toolchain
+        run: pip install -r docs/requirements.txt
 
       - name: Build the docs
-        run: make docs
+        run: mkdocs build --strict
 
       - name: Upload the site
         uses: actions/upload-pages-artifact@v3
         with:
-          path: docs/html
+          path: site
 
   deploy:
     needs: build

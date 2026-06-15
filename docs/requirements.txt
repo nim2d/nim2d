@@ -1,0 +1,5 @@
+# The docs site is built with MkDocs and the Material theme. The API reference
+# comes from mkdocstrings-nim, which parses the Nim source to pull out the doc
+# comments. These pull in mkdocs and mkdocstrings as dependencies.
+mkdocs-material>=9.6,<10
+mkdocstrings-nim>=0.2,<0.3

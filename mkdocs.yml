@@ -1,0 +1,135 @@
+site_name: nim2d
+site_description: A small 2D game engine for Nim, in the spirit of love2d
+site_url: https://nim2d.github.io/nim2d/
+docs_dir: docs
+site_dir: site
+
+repo_name: nim2d/nim2d
+repo_url: https://github.com/nim2d/nim2d
+
+theme:
+  name: material
+  custom_dir: overrides
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+  features:
+    - content.code.copy
+    - content.code.annotate
+    - navigation.sections
+    - navigation.top
+    - navigation.tracking
+    - toc.follow
+    - search.suggest
+    - search.highlight
+  icon:
+    repo: fontawesome/brands/github
+
+extra_css:
+  - stylesheets/nim.css
+
+# requirements.txt sits in docs/ for convenience but is not a page.
+exclude_docs: |
+  requirements.txt
+
+# Rebuild the API pages when the Nim source changes during `mkdocs serve`.
+watch:
+  - src
+
+plugins:
+  - search
+  - mkdocstrings:
+      default_handler: nim
+      handlers:
+        nim:
+          paths: ["src"]
+          options:
+            docstring_style: rst
+            show_source: true
+            heading_level: 2
+            source_url: https://github.com/nim2d/nim2d
+            source_ref: master
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.superfences
+  - pymdownx.inlinehilite
+  - pymdownx.details
+
+nav:
+  - Home: index.md
+  - Guides:
+      - Getting started: getting-started.md
+      - Drawing: drawing.md
+      - Input and timing: input.md
+      - Math: math.md
+      - Data: data.md
+      - Files: filesystem.md
+      - Audio: audio.md
+      - System: system.md
+      - Physics: physics.md
+      - Examples: examples.md
+  - Included batteries:
+      - Camera: camera.md
+      - Collide: collide.md
+      - Tween: tween.md
+      - Schedule: schedule.md
+      - Scene: scene.md
+      - Animation: animation.md
+      - Tilemap: tilemap.md
+  - API reference:
+      - Core:
+          - nim2d: api/nim2d.md
+          - types: api/types.md
+          - color: api/color.md
+          - math: api/math.md
+          - transform: api/transform.md
+          - graphics: api/graphics.md
+          - image: api/image.md
+          - canvas: api/canvas.md
+          - font: api/font.md
+          - mesh: api/mesh.md
+          - spritebatch: api/spritebatch.md
+          - particlesystem: api/particlesystem.md
+          - shader: api/shader.md
+          - window: api/window.md
+          - events: api/events.md
+          - timer: api/timer.md
+          - keyboard: api/keyboard.md
+          - mouse: api/mouse.md
+          - gamepad: api/gamepad.md
+          - touch: api/touch.md
+          - audio: api/audio.md
+          - data: api/data.md
+          - imagedata: api/imagedata.md
+          - filesystem: api/filesystem.md
+          - system: api/system.md
+          - thread: api/thread.md
+      - Batteries:
+          - camera: api/camera.md
+          - collide: api/collide.md
+          - tween: api/tween.md
+          - schedule: api/schedule.md
+          - scene: api/scene.md
+          - animation: api/animation.md
+          - tilemap: api/tilemap.md
+          - physics: api/physics.md

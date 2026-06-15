@@ -1,37 +1,25 @@
 NIM ?= nim
-OUT := docs/html
-API := $(OUT)/api
-GIT_URL := https://github.com/nim2d/nim2d
-PAGES := index getting-started drawing input math data filesystem audio system physics camera collide tween schedule scene animation tilemap examples
+VENV := .venv
+MKDOCS := $(VENV)/bin/mkdocs
+DOCS_DEPS := $(VENV)/.docs-deps
 
-.PHONY: docs api pages shots format format-check clean serve
+.PHONY: docs serve shots format format-check clean
 
-docs: api pages
+# Build the static site, the guides plus the generated API reference, into
+# site/. mkdocstrings-nim compiles a small Nim extractor on the first run.
+docs: $(DOCS_DEPS)
+	@$(MKDOCS) build --strict
 
-# Backend modules get pages (so import links resolve) but stay out of the
-# symbol index, which is for the public API.
-api:
-	@mkdir -p $(API)
-	@for f in $$(find src -name '*.nim'); do \
-		$(NIM) doc --hints:off --git.url:$(GIT_URL) --git.commit:master --git.devel:master --outdir:$(API) "$$f"; \
-		case "$$f" in src/nim2d/backend/*) ;; *) $(NIM) doc --hints:off --index:only --outdir:$(API) "$$f";; esac; \
-	done
-	@$(NIM) buildIndex --hints:off --out:$(API)/theindex.html $(API)
+# Serve the docs with live reload on http://127.0.0.1:8000/nim2d/.
+serve: $(DOCS_DEPS)
+	@$(MKDOCS) serve
 
-pages:
-	@mkdir -p $(OUT)/assets
-	@cp docs/assets/*.png $(OUT)/assets/
-	@for p in $(PAGES); do \
-		$(NIM) md2html --hints:off --outdir:$(OUT) docs/$$p.md; \
-		h1=$$(grep -m1 '^# ' docs/$$p.md | sed 's/^# *//'); \
-		if [ "$$p" = "index" ]; then t="$$h1"; else t="$$h1 - nim2d"; fi; \
-		tmp=$$(mktemp); \
-		sed -e "s#<title>[^<]*</title>#<title>$$t</title>#" \
-		    -e "s#<h1 class=\"title\">[^<]*</h1>#<h1 class=\"title\">$$t</h1>#" \
-		    -e "s#<h1 id=\"[^\"]*\">[^<]*</h1>##" \
-		    -e "s#<h1><a class=\"toc-backref\"[^>]*>[^<]*</a></h1>##" \
-		    $(OUT)/$$p.html > $$tmp && mv $$tmp $(OUT)/$$p.html; \
-	done
+# Set up the Python environment the docs build needs, from docs/requirements.txt.
+$(DOCS_DEPS): docs/requirements.txt
+	@python3 -m venv $(VENV)
+	@$(VENV)/bin/pip install -q --upgrade pip
+	@$(VENV)/bin/pip install -q -r docs/requirements.txt
+	@touch $(DOCS_DEPS)
 
 # Re-render the documentation screenshots into docs/assets. Opens a window and
 # needs the SDL3 libraries plus Box2D (for the physics scene).
@@ -47,9 +35,6 @@ format-check:
 	@nph --check src tests examples tools
 
 clean:
-	rm -rf $(OUT)
-
-serve: docs
-	@cd $(OUT) && python3 -m http.server 8000
+	rm -rf site
 
 include shaders.mk

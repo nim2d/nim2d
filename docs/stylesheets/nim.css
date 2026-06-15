@@ -1,0 +1,51 @@
+/* Nim's colours: the gold/yellow from the logo as the primary, a warmer amber
+   for accents and links so they stay readable on a white page.
+
+   The palette in mkdocs.yml asks for `primary: custom` and `accent: custom`,
+   which puts data-md-color-primary="custom" on the body. Material reads the
+   primary and accent variables off that body attribute, so the overrides have
+   to live on the same selector, setting them on :root loses to the body value
+   the header actually inherits. */
+
+[data-md-color-primary=custom] {
+  --md-primary-fg-color:        #f3d400;
+  --md-primary-fg-color--light: #ffe953;
+  --md-primary-fg-color--dark:  #c9af00;
+
+  /* Text and icons sitting on the gold header, kept dark for contrast. */
+  --md-primary-bg-color:        #1a1a1a;
+  --md-primary-bg-color--light: rgba(0, 0, 0, 0.62);
+}
+
+[data-md-color-accent=custom] {
+  --md-accent-fg-color:              #d97700;
+  --md-accent-fg-color--transparent: rgba(217, 119, 0, 0.1);
+}
+
+/* Light page: gold links are unreadable, so links use a deeper amber. */
+[data-md-color-scheme="default"] {
+  --md-typeset-a-color: #b06a00;
+}
+
+/* Dark page: keep the gold header, brighten links and the accent on slate. */
+[data-md-color-scheme="slate"] {
+  --md-typeset-a-color: #ffd24d;
+  --md-accent-fg-color: #ffb02e;
+}
+
+/* Keep anchored headings clear of the sticky header when jumped to. */
+.doc-heading {
+  scroll-margin-top: 4rem;
+}
+
+/* Separate each generated API entry with a thin rule above it so the procs,
+   funcs and types read as distinct blocks. This is scoped to the symbol
+   objects, not the module wrapper (which also carries .doc-contents), so the
+   rules never nest. */
+.doc-object.doc-func,
+.doc-object.doc-proc,
+.doc-object.doc-type {
+  border-top: 1px solid var(--md-default-fg-color--lightest);
+  padding-top: 1.25rem;
+  margin-top: 1.25rem;
+}

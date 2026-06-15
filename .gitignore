@@ -20,7 +20,10 @@ tests/test_tilemap
 tests/physics_smoke
 
 # Generated documentation (regenerate with `make docs`)
-docs/html/
+site/
+
+# Python environment for the docs build (created by `make docs`)
+.venv/
 
 # Compiled tool binaries
 tools/docshots

@@ -2,9 +2,7 @@
 
 nim2d is a small 2D game engine for Nim, in the spirit of love2d. You open a window, set a few callbacks for loading, updating and drawing, and call `play`. The rest is a box of parts: shapes, images, text, canvases, shaders, input, sound, physics, and the plain-Nim modules for random numbers, noise, files and data.
 
-.. image:: assets/hero.png
-   :width: 740
-   :alt: shapes, a bezier curve and text rendered by nim2d
+![shapes, a bezier curve and text rendered by nim2d](assets/hero.png){ width="740" }
 
 It runs on macOS, Linux and Windows through SDL3 and its GPU API, drawing on Metal or Vulkan depending on the platform. Every screenshot in these docs was rendered by nim2d itself, by a small tool that draws each scene into a canvas, reads the pixels back and saves a PNG.
 
@@ -14,30 +12,29 @@ The guides are hand-written and walk through how things work, and the API refere
 
 ## Guides
 
-- [Getting started](getting-started.html), from `brew install` to a window with a circle in it
-- [Drawing](drawing.html), shapes, images, text, particles, canvases and shaders
-- [Input and timing](input.html), keyboard, mouse, gamepads and the clock
-- [Math](math.html), seeded random, noise, Bezier curves and vectors
-- [Data](data.html), encoding, hashing, compression and packing
-- [Files](filesystem.html), the save directory and reading what you ship
-- [Audio](audio.html), loading and playing sounds
-- [System](system.html), clipboard, battery, background threads and other platform bits
-- [Physics](physics.html), rigid bodies on Box2D
-- [Examples](examples.html), the runnable demos in the repository
+- [Getting started](getting-started.md), from setup to a window with a circle in it
+- [Drawing](drawing.md), shapes, images, text, particles, canvases and shaders
+- [Input and timing](input.md), keyboard, mouse, gamepads and the clock
+- [Math](math.md), seeded random, noise, Bezier curves and vectors
+- [Data](data.md), encoding, hashing, compression and packing
+- [Files](filesystem.md), the save directory and reading what you ship
+- [Audio](audio.md), loading and playing sounds
+- [System](system.md), clipboard, battery, background threads and other platform bits
+- [Physics](physics.md), rigid bodies on Box2D
+- [Examples](examples.md), the runnable demos in the repository
 
 ## Included batteries
 
 These are the opt-in modules. The core never pulls them in, so you reach for one with its own import, like `import nim2d/camera`, and each ships with an example and the guide page below.
 
-- [Camera](camera.html), a movable, zoomable view with smooth following and switching
-- [Collide](collide.html), lightweight overlap and point tests for games that do not want full physics
-- [Tween](tween.html), easing curves and value tweens for smooth motion over time
-- [Schedule](schedule.html), timers that fire callbacks after a delay, on a repeat, or for a while
-- [Scene](scene.html), a scene stack for menus, levels and pause screens
-- [Animation](animation.html), sprite-sheet frames played over time
-- [Tilemap](tilemap.html), loading and drawing levels made in the LDtk editor
+- [Camera](camera.md), a movable, zoomable view with smooth following and switching
+- [Collide](collide.md), lightweight overlap and point tests for games that do not want full physics
+- [Tween](tween.md), easing curves and value tweens for smooth motion over time
+- [Schedule](schedule.md), timers that fire callbacks after a delay, on a repeat, or for a while
+- [Scene](scene.md), a scene stack for menus, levels and pause screens
+- [Animation](animation.md), sprite-sheet frames played over time
+- [Tilemap](tilemap.md), loading and drawing levels made in the LDtk editor
 
 ## Reference
 
-- [API reference](api/nim2d.html), the main module, with links to every other module under it, except [physics](api/physics.html), [camera](api/camera.html), [collide](api/collide.html), [tween](api/tween.html), [schedule](api/schedule.html), [scene](api/scene.html), [animation](api/animation.html) and [tilemap](api/tilemap.html), which are imported separately
-- [Symbol index](api/theindex.html), every type and proc in one list
+The [API reference](api/nim2d.md) is generated from the source comments. The core sits under `nim2d`, and the opt-in modules, physics along with [camera](api/camera.md), [collide](api/collide.md), [tween](api/tween.md), [schedule](api/schedule.md), [scene](api/scene.md), [animation](api/animation.md) and [tilemap](api/tilemap.md), each have their own page since they are imported separately. The search box at the top finds any type or proc by name.

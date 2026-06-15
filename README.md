@@ -6,7 +6,7 @@ nim2d is a 2D game engine for Nim, in the spirit of love2d. It is built on SDL3 
 
 ## Documentation
 
-The guides and the API reference live at [nim2d.github.io/nim2d](https://nim2d.github.io/nim2d/), published from every push to master. The sources are in `docs/`, with screenshots rendered by the engine itself; `make docs` builds everything locally, `make serve` serves it, and `make shots` re-renders the screenshots.
+The guides and the API reference live at [nim2d.github.io/nim2d](https://nim2d.github.io/nim2d/), published from every push to master. The site is built with MkDocs and the Material theme, the guides are the markdown in `docs/`, and the API reference is generated from the source comments by mkdocstrings-nim. Screenshots are rendered by the engine itself. `make docs` builds everything locally, `make serve` serves it with live reload, and `make shots` re-renders the screenshots.
 
 ## Installing
 

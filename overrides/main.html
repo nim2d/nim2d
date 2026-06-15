@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+
+{# GoatCounter, a lightweight privacy-friendly page-view counter. It skips hits
+   from localhost, so running the docs locally does not show up in the stats. #}
+{% block extrahead %}
+  {{ super() }}
+  <script data-goatcounter="https://nim2d.goatcounter.com/count"
+          async src="//gc.zgo.at/count.js"></script>
+{% endblock %}
