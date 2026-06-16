@@ -34,7 +34,8 @@ These are the opt-in modules. The core never pulls them in, so you reach for one
 - [Scene](scene.md), a scene stack for menus, levels and pause screens
 - [Animation](animation.md), sprite-sheet frames played over time
 - [Tilemap](tilemap.md), loading and drawing levels made in the LDtk editor
+- [Dialogue](dialogue.md), branching conversations with a typewriter reveal, choices and rich text
 
 ## Reference
 
-The [API reference](api/nim2d.md) is generated from the source comments. The core sits under `nim2d`, and the opt-in modules, physics along with [camera](api/camera.md), [collide](api/collide.md), [tween](api/tween.md), [schedule](api/schedule.md), [scene](api/scene.md), [animation](api/animation.md) and [tilemap](api/tilemap.md), each have their own page since they are imported separately. The search box at the top finds any type or proc by name.
+The [API reference](api/nim2d.md) is generated from the source comments. The core sits under `nim2d`, and the opt-in modules, physics along with [camera](api/camera.md), [collide](api/collide.md), [tween](api/tween.md), [schedule](api/schedule.md), [scene](api/scene.md), [animation](api/animation.md), [tilemap](api/tilemap.md) and [dialogue](api/dialogue.md), each have their own page since they are imported separately. The search box at the top finds any type or proc by name.

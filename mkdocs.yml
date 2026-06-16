@@ -96,6 +96,7 @@ nav:
       - Scene: scene.md
       - Animation: animation.md
       - Tilemap: tilemap.md
+      - Dialogue: dialogue.md
   - API reference:
       - Core:
           - nim2d: api/nim2d.md
@@ -132,4 +133,5 @@ nav:
           - scene: api/scene.md
           - animation: api/animation.md
           - tilemap: api/tilemap.md
+          - dialogue: api/dialogue.md
           - physics: api/physics.md
