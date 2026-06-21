@@ -88,6 +88,7 @@ nav:
       - System: system.md
       - Physics: physics.md
       - Examples: examples.md
+      - Shipping your game: shipping.md
   - Included batteries:
       - Camera: camera.md
       - Collide: collide.md

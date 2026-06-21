@@ -158,7 +158,7 @@ Run it and the circle breathes. The sixth argument to [`newNim2d`](api/nim2d.md#
 
 Coordinates are in pixels with the origin at the top left and y pointing down. Positions and sizes are plain `float`, so you can pass numbers and the results of math without sprinkling type conversions everywhere. Colors are bytes from 0 to 255. Angles, where they show up, are in radians.
 
-From here, the [drawing page](drawing.md) walks through everything you can put on the screen, and the [input page](input.md) covers reading the keyboard, mouse and gamepads. Or just open the [examples](examples.md) and start changing numbers.
+From here, the [drawing page](drawing.md) walks through everything you can put on the screen, and the [input page](input.md) covers reading the keyboard, mouse and gamepads. Or just open the [examples](examples.md) and start changing numbers. When the game is ready to share with others, the [shipping page](shipping.md) covers the release build and getting the libraries onto a player's machine.
 
 !!! info "See also"
     The runnable [`all` example](https://github.com/nim2d/nim2d/blob/master/examples/all.nim), and the [`nim2d` API reference](api/nim2d.md).
