@@ -111,7 +111,7 @@ sprite.draw(nim2d, x, y, angle, 0.5, 0.5, w.float / 2, h.float / 2) # (2)!
 1.  Read the image's pixel size.
 2.  Draw it at x, y, turned by the angle, at half size, spinning about its center.
 
-You can tint an image with [`setColorMod`](api/image.md#setColorMod) and fade it with [`setAlphaMod`](api/image.md#setAlphaMod). There are also [`getWidth`](api/image.md#getWidth), [`getHeight`](api/image.md#getHeight) and [`getDimensions`](api/image.md#getDimensions). The `flipH` and `flipV` arguments of `draw` mirror the image, and [`destroy`](api/image.md#destroy) frees a texture early if you are churning through many of them.
+You can tint an image with [`setColorMod`](api/image.md#setColorMod) and fade it with [`setAlphaMod`](api/image.md#setAlphaMod). There are also [`getWidth`](api/image.md#getWidth), [`getHeight`](api/image.md#getHeight) and [`getDimensions`](api/image.md#getDimensions). The `flipH` and `flipV` arguments of `draw` mirror the image. An image frees its texture when it goes out of use, so you rarely have to manage it by hand; [`destroy`](api/image.md#destroy) releases it right away when you are churning through many of them.
 
 By default an image is sampled smoothly, which is right for photos and high-resolution art but blurs pixel art when you scale it up. Call [`setFilter(filNearest)`](api/image.md#setFilter) for sharp, blocky sampling that keeps pixel art crisp, or `setFilter(filLinear)` to go back. [`setWrap`](api/image.md#setWrap) controls what happens when texcoords run outside the image, which comes up when you draw a quad larger than the texture: `wrapClamp` holds the edge pixel (the default), `wrapRepeat` tiles the image, and `wrapMirror` tiles it flipping every other copy. Both settings apply to canvases as well. Pass `mipmaps = true` to `newImage` to build a mipmap chain, which stops a texture from shimmering when it is drawn much smaller than its native size.
 
@@ -259,7 +259,7 @@ n2d.draw = proc(nim2d: Nim2d) =
   canvas.draw(nim2d, 50, 50)     # draw the canvas like any image
 ```
 
-[`clear`](api/nim2d.md#clear) fills the current target with a color, and called with no color it uses the background. [`withCanvas`](api/nim2d.md#withCanvas) wraps the switch and the switch back around a block.
+[`clear`](api/nim2d.md#clear) fills the current target with a color, and called with no color it uses the background. [`withCanvas`](api/nim2d.md#withCanvas) wraps the switch and the switch back around a block. Like an image, a canvas frees its render target when it goes out of use, and [`nim2d.destroy(canvas)`](api/canvas.md#destroy) releases it, along with the paired depth target a stencil canvas carries, right away.
 
 You can also go the other way and read a canvas back to the CPU. [`newImageData(canvas)`](api/imagedata.md#newImageData) downloads the pixels into an [`ImageData`](api/imagedata.md#ImageData), which you can inspect or save to a PNG with [`encode`](api/imagedata.md#encode). The renderer defers its work until the end of the frame, so the pixels are what the canvas held after the last completed frame: draw to the canvas in one frame, read it back in the next, in `update`. This is how the screenshots in these docs are made, and it works just as well for letting players save a picture of their creation.
 

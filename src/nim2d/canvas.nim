@@ -5,6 +5,7 @@
 ## with image.nim.
 
 import types
+import backend/sdl
 import backend/renderer
 import imagedata
 
@@ -25,6 +26,17 @@ proc newCanvas*(nim2d: Nim2d, width, height: int32): Canvas =
 proc newCanvas*(nim2d: Nim2d): Canvas =
   ## A canvas the size of the window.
   newCanvas(nim2d, nim2d.width, nim2d.height)
+
+proc destroy*(nim2d: Nim2d, c: Canvas) =
+  ## Free a canvas's GPU textures: its color target and, when stencil is
+  ## enabled, the paired depth target. Like the texture `destroy`, this releases
+  ## memory early; a canvas otherwise frees both when it is collected.
+  if c.depth != nil:
+    SDL_ReleaseGPUTexture(nim2d.gpu.device, c.depth)
+    c.depth = nil
+  if c.tex != nil:
+    SDL_ReleaseGPUTexture(nim2d.gpu.device, c.tex)
+    c.tex = nil
 
 proc newImageData*(nim2d: Nim2d, canvas: Canvas): ImageData =
   ## Read a canvas's pixels back from the GPU into a new ImageData, which you

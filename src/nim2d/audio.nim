@@ -28,8 +28,7 @@ type
     stStatic
     stStream
 
-  Source* = ref object
-    ## A playable sound: a loaded `MIX_Audio` bound to its own `MIX_Track`.
+  SourceObj = object
     audio: ptr MIX_Audio
     track: ptr MIX_Track
     kind: SourceType
@@ -39,12 +38,28 @@ type
     positioned: bool
     wx, wy, wz: float ## world position, used for the listener offset
 
+  Source* = ref SourceObj
+    ## A playable sound: a loaded `MIX_Audio` bound to its own `MIX_Track`.
+    ## `destroy` frees its track and audio, and anything still loaded is freed
+    ## when the engine's audio shuts down, so you do not have to track them by
+    ## hand.
+
 var
   gMixer: ptr MIX_Mixer = nil
   gInitTried = false
   gListener: tuple[x, y, z: float] = (0.0, 0.0, 0.0)
   gPositioned: seq[Source] = @[]
   gSources: seq[Source] = @[]
+
+proc `=destroy`(o: var SourceObj) =
+  # The mixer owns the track and audio; once it is gone (after shutdownAudio) it
+  # has freed them already, so a late destructor frees nothing. gMixer is the
+  # audio-liveness flag, the audio analogue of the renderer's gpuLiveDevice.
+  if gMixer != nil:
+    if o.track != nil:
+      MIX_DestroyTrack(o.track)
+    if o.audio != nil:
+      MIX_DestroyAudio(o.audio)
 
 # --- lifecycle -------------------------------------------------------------
 

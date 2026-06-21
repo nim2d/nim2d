@@ -173,4 +173,9 @@ proc print*(
   )
   SDL_DestroySurface(surf)
   glyphs.draw(nim2d, x, y, angle, sx, sy)
+  # The draw only records the raw `tex` pointer, so hand it to the renderer to
+  # free after the frame submits, and clear it from the transient wrapper so the
+  # wrapper's destructor does not release it early (a double free with the temp
+  # list, and a use-after-free of the still-pending draw).
   nim2d.gpu.addTempTexture(tex)
+  glyphs.tex = nil

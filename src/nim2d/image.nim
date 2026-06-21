@@ -181,8 +181,8 @@ proc getDimensions*(t: Texture): tuple[w, h: int32] =
 
 proc destroy*(nim2d: Nim2d, t: Texture) =
   ## Free the GPU texture. The object is unusable afterwards; this exists for
-  ## releasing memory early, since textures otherwise live until the engine
-  ## shuts down.
+  ## releasing memory early, since a texture otherwise frees itself when it is
+  ## collected.
   if t.tex != nil:
     SDL_ReleaseGPUTexture(nim2d.gpu.device, t.tex)
     t.tex = nil

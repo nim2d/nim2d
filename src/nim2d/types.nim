@@ -2,10 +2,10 @@
 ##
 ## This module is mostly data, with the behaviour living in the backend renderer
 ## and the public modules. The two exceptions are the device-liveness flag and
-## the `=destroy` hooks for the font and shader resources, which Nim wants in the
-## same module as the type they belong to. It stays a leaf of the dependency
-## graph, since `types` is imported by everything and itself depends only on the
-## SDL shims and the transform math.
+## the `=destroy` hooks for the texture, font and shader resources, which Nim
+## wants in the same module as the type they belong to. It stays a leaf of the
+## dependency graph, since `types` is imported by everything and itself depends
+## only on the SDL shims and the transform math.
 
 import backend/sdl
 import backend/sdlttf
@@ -171,8 +171,8 @@ type
     pkTextured
 
   # --- Drawables -----------------------------------------------------------
-  Drawable* = ref object of RootObj
-    ## The base of everything that can be drawn to the screen.
+  DrawableObj = object of RootObj
+  Drawable* = ref DrawableObj ## The base of everything that can be drawn to the screen.
 
   Filter* = enum
     ## Texture sampling: smooth (the default) or sharp, for pixel art.
@@ -185,9 +185,7 @@ type
     wrapRepeat
     wrapMirror
 
-  Texture* = ref object of Drawable
-    ## A GPU texture with its size and sampling state. Images and canvases are
-    ## both textures, which is why they draw the same way.
+  TextureObj = object of DrawableObj
     tex*: ptr SDL_GPUTexture
     width*: int32
     height*: int32
@@ -195,13 +193,22 @@ type
     filter*: Filter ## linear by default
     wrap*: Wrap ## clamp by default
 
-  Image* = ref object of Texture
-    ## A texture loaded from a file or uploaded from an ImageData.
+  Texture* = ref TextureObj
+    ## A GPU texture with its size and sampling state. Images and canvases are
+    ## both textures, which is why they draw the same way. Its texture frees
+    ## itself when the texture is collected; `destroy` frees it early.
 
-  Canvas* = ref object of Texture
-    ## A render target (GPU texture created with COLOR_TARGET usage).
+  ImageObj = object of TextureObj
+  Image* = ref ImageObj ## A texture loaded from a file or uploaded from an ImageData.
+
+  CanvasObj = object of TextureObj
     depth*: ptr SDL_GPUTexture
       ## paired depth-stencil target, only when stencil is enabled
+
+  Canvas* = ref CanvasObj
+    ## A render target (GPU texture created with COLOR_TARGET usage). It frees
+    ## its color target, and the paired depth target when present, on
+    ## collection; `destroy` frees them early.
 
   Quad* = object
     ## A rectangular sub-region of a texture, as texcoords plus its pixel size.
@@ -385,6 +392,25 @@ var gpuLiveDevice*: ptr SDL_GPUDevice
   ## shader or other resource collected after the engine has shut down frees
   ## nothing and the device's own teardown reclaims it instead. This sidesteps
   ## the unspecified order in which ORC frees globals at exit.
+
+proc `=destroy`(o: var TextureObj) =
+  # A GPU texture. Releasing it needs a live device, so a destructor that runs
+  # after the engine has shut down frees nothing and the device's own teardown
+  # reclaims it. Images add no handle, so they inherit this hook.
+  if gpuLiveDevice != nil and o.tex != nil:
+    SDL_ReleaseGPUTexture(gpuLiveDevice, o.tex)
+    o.tex = nil
+
+proc `=destroy`(o: var CanvasObj) =
+  # A canvas owns its color target and, with stencil on, a paired depth target.
+  # A derived =destroy does not run the base one, so free both handles here.
+  if gpuLiveDevice != nil:
+    if o.tex != nil:
+      SDL_ReleaseGPUTexture(gpuLiveDevice, o.tex)
+      o.tex = nil
+    if o.depth != nil:
+      SDL_ReleaseGPUTexture(gpuLiveDevice, o.depth)
+      o.depth = nil
 
 proc `=destroy`(o: var FontObj) =
   # A TrueType handle and, for a bitmap font, an internal glyph-sheet texture.
