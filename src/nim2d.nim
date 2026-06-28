@@ -277,6 +277,10 @@ proc newNim2d*(
   if not SDL_Init(SDL_InitFlags(SDL_INIT_VIDEO or SDL_INIT_GAMEPAD)):
     raise newException(CatchableError, "SDL_Init failed: " & $SDL_GetError())
 
+  # Open any controller already connected at launch, so it is reported and polled
+  # from the first frame instead of waiting for SDL's connect event, which lags.
+  openConnectedGamepads()
+
   # High-DPI gives a backing buffer at the display's real pixel resolution, so on
   # a 2x screen the drawable, and getWidth/getHeight, are twice the point size.
   let flags = (if highDpi: SDL_WINDOW_HIGH_PIXEL_DENSITY else: 0'u64)

@@ -1,10 +1,11 @@
 ## Gamepads.
 ##
 ## Controllers are opened automatically when they connect (the event loop calls
-## openGamepad), and the `gamepadpressed`, `gamepadreleased` and `gamepadaxis`
-## callbacks report input. You can also poll with `isGamepadDown` and
-## `gamepadAxis`. Built on the SDL3 gamepad API, so anything SDL recognizes as
-## a gamepad works.
+## openGamepad), and any already connected when the game starts are opened up
+## front, so they are reported from the first frame. The `gamepadpressed`,
+## `gamepadreleased` and `gamepadaxis` callbacks report input. You can also poll
+## with `isGamepadDown` and `gamepadAxis`. Built on the SDL3 gamepad API, so
+## anything SDL recognizes as a gamepad works.
 
 import std/tables
 import backend/sdl
@@ -86,8 +87,25 @@ proc closeGamepad*(id: GamepadId) =
     SDL_CloseGamepad(pads[id])
     pads.del(id)
 
+proc openConnectedGamepads*() =
+  ## Open every controller the system currently reports. `newNim2d` calls this at
+  ## startup and `connectedGamepads` calls it before reading the list, so a
+  ## controller plugged in before the game launched is opened and reported from
+  ## the first frame rather than waiting for SDL's connect event, which can lag
+  ## past the opening frames. Opening is idempotent, so repeated calls are cheap.
+  var count: cint = 0
+  let ids = SDL_GetGamepads(addr count)
+  if ids == nil:
+    return
+  let arr = cast[ptr UncheckedArray[GamepadId]](ids)
+  for i in 0 ..< count.int:
+    openGamepad(arr[i])
+  SDL_free(ids)
+
 proc connectedGamepads*(): seq[GamepadId] =
-  ## The ids of every connected controller.
+  ## The ids of every connected controller. Controllers connected before the game
+  ## launched are included from the first frame, not only once SDL reports them.
+  openConnectedGamepads()
   for id in pads.keys:
     result.add id
 
