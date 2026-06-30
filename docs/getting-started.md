@@ -114,7 +114,7 @@ On Windows you can steer the choice with SDL's `SDL_GPU_DRIVER` hint, set as an 
 
 Leaving it unset lets SDL decide. This is worth knowing because the two backends are not always equivalent on a given machine: a driver bug on one can show up as a hang, a crash or wrong colors that the other does not have, and switching the hint is the quickest way to tell a backend problem from a game problem. Direct3D 12 is generally the steadier choice on Windows.
 
-One thing carries a caveat. A custom shader made with [`newShader`](api/shader.md#newShader) from SPIR-V and MSL blobs runs on Vulkan and Metal, but not on Direct3D 12, since there is no DXIL blob for it. The built-in drawing — shapes, images, text, canvases — works on all three backends; only your own GLSL-authored shaders are Vulkan/Metal-only for now. If you use one on Windows, force the Vulkan backend with the hint above, or keep the post-processing on a platform that has it.
+Custom shaders are cross-platform too. A shader made with [`newShader`](api/shader.md#newShader) from SPIR-V, MSL and DXIL blobs runs on all three backends, the same as the built-in drawing. The only thing to know is that the DXIL blob needs a DXC-enabled shadercross to produce (the SPIR-V and MSL blobs do not): the prebuilt `SDL3_shadercross-*-VC-x64` release bundles DXC and works as-is, and the [drawing guide](drawing.md#shaders) shows the three compile commands. If you give `newShader` only the SPIR-V and MSL blobs, it still runs on Vulkan and Metal and falls back to the built-in shader on Direct3D 12; set `SDL_GPU_DRIVER=vulkan` to run such a shader on Windows.
 
 ## The first program
 

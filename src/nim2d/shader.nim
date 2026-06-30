@@ -14,9 +14,10 @@
 ## shapes), and the uniform is filled by `send`.
 ##
 ## MSL source runs on the Metal backend only. To write a shader that runs
-## everywhere, author it in GLSL, compile it offline to SPIR-V and MSL the same
-## way the built-in shaders are (see the shaders Makefile), and pass both blobs
-## to the second `newShader` below, which picks the one the backend wants.
+## everywhere, author it in GLSL, compile it offline to SPIR-V, MSL and DXIL the
+## same way the built-in shaders are (see the shaders Makefile), and pass the
+## three blobs to the `newShader` overload below, which picks the one the live
+## backend wants. A two-blob (SPIR-V + MSL) overload covers Vulkan and Metal only.
 
 import types
 import backend/sdl
@@ -43,35 +44,52 @@ proc newShader*(nim2d: Nim2d, fragmentSrc: string, uniformFloats = 0): Shader =
     result.hasUniform,
   )
 
-proc newShader*(nim2d: Nim2d, spirv, msl: string, uniformFloats = 0): Shader =
+proc newShader*(
+    nim2d: Nim2d, spirv, msl, dxil: string, uniformFloats = 0
+): Shader =
   ## Compile a fragment shader from precompiled cross-platform blobs: SPIR-V for
-  ## Vulkan, MSL for Metal, both produced offline from one GLSL source. The blob
-  ## matching the live backend is used, so this runs on macOS, iOS, Linux and
-  ## Windows under Vulkan. The GLSL takes `vUV` at location 0 and `vColor` at
-  ## location 1 from the vertex, a sampler in set 2, and (if used) a uniform
-  ## buffer in set 3.
+  ## Vulkan, MSL for Metal and DXIL for Direct3D 12, all produced offline from one
+  ## GLSL source. The blob matching the live backend is chosen, so a single call
+  ## runs everywhere nim2d does — macOS and iOS (Metal), Linux (Vulkan) and Windows
+  ## (Direct3D 12 or Vulkan). `uniformFloats` is how many float32 the fragment
+  ## uniform holds (0 for none); fill it later with `send`.
   ##
-  ## There is no DXIL blob here, so this does not run on the Direct3D 12 backend
-  ## SDL may pick on Windows; force Vulkan with `SDL_GPU_DRIVER=vulkan` if a game
-  ## uses a custom shader there. The built-in drawing runs on Direct3D 12 either
-  ## way.
-  let fmt = nim2d.gpu.shaderFormat
-  if fmt == SDL_GPUShaderFormat(SDL_GPU_SHADERFORMAT_DXIL):
-    raise newException(
-      CatchableError,
-      "newShader(spirv, msl) has no DXIL blob for the Direct3D 12 backend; " &
-        "set SDL_GPU_DRIVER=vulkan to use custom shaders on Windows",
-    )
+  ## Author the GLSL the way the built-in textured shader is: `vUV` at location 0
+  ## and `vColor` at location 1 from the vertex, a sampler in set 2, and (when
+  ## used) a uniform buffer in set 3. Compile the three blobs with the same tools
+  ## as the built-in shaders — glslc, then a DXC-enabled shadercross (the prebuilt
+  ## `SDL3_shadercross-*-VC-x64` works on Windows):
+  ##
+  ## .. code-block:: sh
+  ##   glslc       -fshader-stage=fragment my.frag -o my.spv
+  ##   shadercross my.spv -s SPIRV -d MSL  -t fragment -e main -o my.metal
+  ##   shadercross my.spv -s SPIRV -d DXIL -t fragment -e main -o my.dxil
+  ##
+  ## If no blob is supplied for the live backend (e.g. an empty `dxil` while
+  ## Direct3D 12 is active), or the pipeline fails to build, this returns nil and
+  ## the draw falls back to the built-in shader rather than risk a broken pipeline.
+  ## Always give a backend its own format: a mismatched blob can hang the GPU, so
+  ## the selection always goes through the format-matching `blobFor`.
   result = Shader(hasUniform: uniformFloats > 0)
   if uniformFloats > 0:
     result.uniform = newSeq[byte](uniformFloats * sizeof(float32))
-  let useSpv = fmt == SDL_GPUShaderFormat(SDL_GPU_SHADERFORMAT_SPIRV)
-  result.pipelines = nim2d.gpu.createShaderPipelines(
-    (if useSpv: spirv else: msl),
-    (if useSpv: "main".cstring else: "main0".cstring),
-    fmt,
-    result.hasUniform,
-  )
+  let (blob, entry) = blobFor(nim2d.gpu.shaderFormat, spirv, msl, dxil)
+  if blob.len == 0:
+    return nil
+  try:
+    result.pipelines =
+      nim2d.gpu.createShaderPipelines(blob, entry, nim2d.gpu.shaderFormat, result.hasUniform)
+  except CatchableError:
+    return nil
+
+proc newShader*(nim2d: Nim2d, spirv, msl: string, uniformFloats = 0): Shader =
+  ## Two-blob form covering Vulkan (SPIR-V) and Metal (MSL); a convenience wrapper
+  ## over the three-blob overload above with no DXIL blob. With no DXIL it returns
+  ## nil on the Direct3D 12 backend SDL may pick on Windows, and the draw falls
+  ## back to the built-in shader. Pass a DXIL blob as well (the three-blob form),
+  ## or force Vulkan with `SDL_GPU_DRIVER=vulkan`, to run a custom shader on
+  ## Windows.
+  newShader(nim2d, spirv, msl, "", uniformFloats)
 
 proc send*(shader: Shader, values: openArray[float32]) =
   ## Fill the fragment uniform buffer with float32 values.

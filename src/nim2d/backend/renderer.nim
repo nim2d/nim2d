@@ -141,12 +141,14 @@ proc makePipeline(
       CatchableError, "SDL_CreateGPUGraphicsPipeline failed: " & $SDL_GetError()
     )
 
-proc blobFor(
+proc blobFor*(
     fmt: SDL_GPUShaderFormat, spv, msl, dxil: string
 ): (string, cstring) =
-  ## (blob, entry point) for the active built-in shader format. SPIR-V (Vulkan)
-  ## and DXIL (Direct3D 12) keep the authored `main`; MSL (Metal) uses `main0`,
-  ## since SPIRV-Cross renames `main` when it transpiles.
+  ## (blob, entry point) for the active shader format, shared by the built-in and
+  ## the user-shader pipelines. SPIR-V (Vulkan) and DXIL (Direct3D 12) keep the
+  ## authored `main`; MSL (Metal) uses `main0`, since SPIRV-Cross renames `main`
+  ## when it transpiles. The returned blob is empty when the caller passed no blob
+  ## for this format, which the user-shader path treats as "skip the effect".
   if fmt == SDL_GPUShaderFormat(SDL_GPU_SHADERFORMAT_SPIRV):
     (spv, "main".cstring)
   elif fmt == SDL_GPUShaderFormat(SDL_GPU_SHADERFORMAT_DXIL):

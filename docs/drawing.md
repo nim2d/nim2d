@@ -305,14 +305,15 @@ You can replace the fragment stage with your own shader for effects. While a sha
 
 ![an animated plasma drawn by a user fragment shader](assets/shader.png){ width="560" }
 
-There are two ways to make one. The portable way is to write the shader once in GLSL, compile it offline to a SPIR-V blob and an MSL blob, and hand both to [`newShader`](api/shader.md#newShader); the engine picks the one the running backend wants, so the same program draws on Metal and Vulkan alike. The shader example does exactly this, and the comment at the top of its `plasma.frag` shows the two compile commands (glslc, then shadercross). The GLSL receives `vUV` at location 0 and `vColor` at location 1 from the vertex stage, a sampler in set 2, and, when you ask for one, a uniform buffer in set 3.
+There are two ways to make one. The portable way is to write the shader once in GLSL, compile it offline to a SPIR-V blob, an MSL blob and a DXIL blob, and hand all three to [`newShader`](api/shader.md#newShader); the engine picks the one the running backend wants, so the same program draws on Vulkan, Metal and Direct3D 12 alike. The shader example does exactly this, and the comment at the top of its `plasma.frag` shows the three compile commands (glslc, then shadercross twice). The GLSL receives `vUV` at location 0 and `vColor` at location 1 from the vertex stage, a sampler in set 2, and, when you ask for one, a uniform buffer in set 3.
 
-These two blobs cover Vulkan and Metal but not the Direct3D 12 backend that SDL may pick on Windows, since there is no DXIL blob for a custom shader. The built-in drawing runs on Direct3D 12 either way — only your own shaders are affected. If a game uses one on Windows, force the Vulkan backend by setting `SDL_GPU_DRIVER=vulkan` before it starts (see [graphics backends](getting-started.md#graphics-backends)).
+The DXIL blob is what lets a custom shader run on the Direct3D 12 backend SDL picks by default on Windows; producing it needs a [DXC-enabled shadercross](getting-started.md#graphics-backends). If you only have the SPIR-V and MSL blobs, the two-blob `newShader(spv, msl, ...)` still works on Vulkan and Metal, and on Direct3D 12 it returns `nil` so the draw falls back to the built-in shader rather than failing — force Vulkan with `SDL_GPU_DRIVER=vulkan` to run such a shader on Windows. A `nil` shader is always safe to `setShader`; it just draws with the built-in pipeline.
 
 ```nim { .annotate }
 const spv = staticRead("plasma.spv")
 const msl = staticRead("plasma.metal")
-let effect = n2d.newShader(spv, msl, uniformFloats = 4) # (1)!
+const dxil = staticRead("plasma.dxil")
+let effect = n2d.newShader(spv, msl, dxil, uniformFloats = 4) # (1)!
 
 n2d.draw = proc(nim2d: Nim2d) =
   effect.send([time.float32, w, h, 0]) # (2)!

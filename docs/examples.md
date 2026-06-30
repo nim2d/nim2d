@@ -30,7 +30,7 @@ The rest, in the order you might explore them:
 - `dialogue.nim` runs a branching conversation with a guard: a portrait, a typewriter reveal, rich text (bold, italic, color and outlined words through the markup), and choices that branch to other nodes, one of them gated behind a flag. Space or enter advances and confirms, the arrows pick, and a click selects. It uses [`import nim2d/dialogue`](api/dialogue.md).
 - `input.nim` shows held-key polling, mouse position and buttons, the wheel, and text input.
 - `sprites.nim` shows a sprite batch, a colored mesh and a quad crop.
-- `shader.nim` runs a fragment shader over a fullscreen rectangle for an animated plasma. The shader is authored in GLSL (`plasma.frag`) and compiled offline to SPIR-V and MSL blobs, so it runs on both Metal and Vulkan.
+- `shader.nim` runs a fragment shader over a fullscreen rectangle for an animated plasma. The shader is authored in GLSL (`plasma.frag`) and compiled offline to SPIR-V, MSL and DXIL blobs, so it runs on Vulkan, Metal and Direct3D 12.
 - `noise.nim` scrolls Perlin noise across the window and shows a concave star filled by ear clipping and a Bezier curve.
 - `data.nim` has no window and prints base64, hex, hashes, compression sizes and a packed value, so it doubles as a quick check.
 - `imagedata.nim` builds a small texture on the CPU pixel by pixel, draws it scaled up, and saves it to a PNG when you press S.

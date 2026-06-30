@@ -36,6 +36,7 @@ examples/*
 !examples/*.frag
 !examples/*.spv
 !examples/*.metal
+!examples/*.dxil
 !examples/assets/
 examples/assets/*
 !examples/assets/*.wav
