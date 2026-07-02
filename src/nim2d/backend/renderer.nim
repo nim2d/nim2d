@@ -338,7 +338,10 @@ proc newGpuContext*(
     uint32(SDL_GPU_SHADERFORMAT_MSL) or uint32(SDL_GPU_SHADERFORMAT_SPIRV) or
     uint32(SDL_GPU_SHADERFORMAT_DXIL)
   )
-  result.device = SDL_CreateGPUDevice(want, false, nil)
+  # debugMode is normally off; -d:nvGpuDebug turns on the backend's validation layer
+  # (D3D12/Vulkan) so illegal GPU commands surface as errors instead of silently hanging
+  # the driver. Diagnostic only -- it has a perf cost and is never on in shipping builds.
+  result.device = SDL_CreateGPUDevice(want, defined(nvGpuDebug), nil)
   if result.device == nil:
     raise newException(CatchableError, "SDL_CreateGPUDevice failed: " & $SDL_GetError())
   # Publish the live device so device-bound destructors know it is safe to
